@@ -124,6 +124,11 @@ export default function DepartmentManagement() {
       return sector.name.toLowerCase().includes(searchQuery.toLowerCase());
     });
 
+  const departmentSectorCount = new Set(
+    filteredDepartmentsView.map((dept) => dept.sector).filter(Boolean)
+  ).size;
+  const activeDepartmentCount = filteredDepartmentsView.filter((dept) => dept.is_active !== false).length;
+
   const handleEdit = (dept) => {
     setEditingDept(dept);
     setShowForm(true);
@@ -242,12 +247,12 @@ export default function DepartmentManagement() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
             <div>
               <p className="text-3xl font-bold text-slate-900 dark:text-white">
-                {derivedDepartments.length}
+                {filteredDepartmentsView.length}
               </p>
               <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Departments</p>
             </div>
             <div>
-              <p className="text-3xl font-bold text-slate-900 dark:text-white">{sectors.length}</p>
+              <p className="text-3xl font-bold text-slate-900 dark:text-white">{departmentSectorCount}</p>
               <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Sectors</p>
             </div>
             <div>
@@ -255,9 +260,7 @@ export default function DepartmentManagement() {
               <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Team Members</p>
             </div>
             <div>
-              <p className="text-3xl font-bold text-slate-900 dark:text-white">
-                {sectors.reduce((sum, s) => sum + s.members, 0)}
-              </p>
+              <p className="text-3xl font-bold text-slate-900 dark:text-white">{activeDepartmentCount}</p>
               <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Active</p>
             </div>
           </div>
