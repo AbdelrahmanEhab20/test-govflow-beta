@@ -196,7 +196,7 @@ export default function Layout({ children, currentPageName }) {
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -205,7 +205,7 @@ export default function Layout({ children, currentPageName }) {
       <aside className={`
         fixed top-0 left-0 z-50 h-full w-72 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800
         transform transition-transform duration-300 ease-in-out
-        lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        md:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         <div className="flex flex-col h-full">
           {/* Logo */}
@@ -230,7 +230,7 @@ export default function Layout({ children, currentPageName }) {
             <Button 
               variant="ghost" 
               size="icon" 
-              className="lg:hidden"
+              className="md:hidden"
               onClick={() => setSidebarOpen(false)}
             >
               <X className="w-5 h-5" />
@@ -358,7 +358,7 @@ export default function Layout({ children, currentPageName }) {
       </aside>
 
       {/* Main content */}
-      <div className="lg:pl-72">
+      <div className="md:pl-72">
         {/* Top bar */}
         <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30 glass-effect">
           <div className="h-full flex items-center justify-between px-4 lg:px-6">
@@ -366,7 +366,7 @@ export default function Layout({ children, currentPageName }) {
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="lg:hidden"
+                className="md:hidden"
                 onClick={() => setSidebarOpen(true)}
               >
                 <Menu className="w-5 h-5" />
