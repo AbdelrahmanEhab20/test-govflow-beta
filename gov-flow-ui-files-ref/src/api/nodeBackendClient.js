@@ -4,51 +4,47 @@ export const useNodeBackend =
   import.meta.env.VITE_USE_NODE_BACKEND === 'true' ||
   Boolean(apiBaseUrl);
 
-const DEV_USER_KEY = 'govflow_dev_user_id';
+const AUTH_TOKEN_KEY = 'govflow_auth_token';
 const SIGNED_OUT_KEY = 'govflow_signed_out';
 
-function readDevUserId() {
+function readAuthToken() {
   try {
     if (localStorage.getItem(SIGNED_OUT_KEY) === 'true') {
       return null;
     }
-    return (
-      localStorage.getItem(DEV_USER_KEY) ||
-      import.meta.env.VITE_DEV_USER_ID ||
-      'user1'
-    );
+    return localStorage.getItem(AUTH_TOKEN_KEY);
   } catch {
-    return import.meta.env.VITE_DEV_USER_ID || 'user1';
+    return null;
   }
 }
 
-let currentUserId = readDevUserId();
+let currentAuthToken = readAuthToken();
 
-export function setNodeBackendUserId(userId) {
-  if (!userId) return;
-  currentUserId = userId;
+export function setNodeBackendAuthToken(token) {
+  if (!token) return;
+  currentAuthToken = token;
   try {
-    localStorage.setItem(DEV_USER_KEY, userId);
+    localStorage.setItem(AUTH_TOKEN_KEY, token);
     localStorage.removeItem(SIGNED_OUT_KEY);
   } catch {
     // Ignore non-browser storage errors.
   }
 }
 
-export function clearNodeBackendUserId() {
-  currentUserId = null;
+export function clearNodeBackendAuthToken() {
+  currentAuthToken = null;
   try {
-    localStorage.removeItem(DEV_USER_KEY);
+    localStorage.removeItem(AUTH_TOKEN_KEY);
   } catch {
     // Ignore non-browser storage errors.
   }
 }
 
 export function markNodeBackendSignedOut() {
-  currentUserId = null;
+  currentAuthToken = null;
   try {
     localStorage.setItem(SIGNED_OUT_KEY, 'true');
-    localStorage.removeItem(DEV_USER_KEY);
+    localStorage.removeItem(AUTH_TOKEN_KEY);
   } catch {
     // Ignore non-browser storage errors.
   }
@@ -75,8 +71,8 @@ function buildUrl(path, query) {
 
 export async function nodeRequest(path, { method = 'GET', query, body, headers = {}, formData } = {}) {
   const requestHeaders = { ...headers };
-  if (currentUserId) {
-    requestHeaders['X-User-Id'] = currentUserId;
+  if (currentAuthToken) {
+    requestHeaders.Authorization = `Bearer ${currentAuthToken}`;
   }
 
   let payload = undefined;

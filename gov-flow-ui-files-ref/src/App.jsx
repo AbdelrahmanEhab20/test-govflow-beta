@@ -8,6 +8,9 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import Login from '@/pages/Login';
+import AcceptInvite from '@/pages/AcceptInvite';
+import ForgotPassword from '@/pages/ForgotPassword';
+import ResetPassword from '@/pages/ResetPassword';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -46,6 +49,18 @@ const AuthenticatedApp = () => {
             ? <Navigate to={`/${mainPageKey}`} replace />
             : <Login />
         }
+      />
+      <Route
+        path="/accept-invite/:token"
+        element={isAuthenticated ? <Navigate to={`/${mainPageKey}`} replace /> : <AcceptInvite />}
+      />
+      <Route
+        path="/forgot-password"
+        element={isAuthenticated ? <Navigate to={`/${mainPageKey}`} replace /> : <ForgotPassword />}
+      />
+      <Route
+        path="/reset-password/:token"
+        element={isAuthenticated ? <Navigate to={`/${mainPageKey}`} replace /> : <ResetPassword />}
       />
       <Route path="/" element={
         isAuthenticated

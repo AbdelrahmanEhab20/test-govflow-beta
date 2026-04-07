@@ -2,8 +2,8 @@ import { base44 } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
 import {
   nodeRequest,
-  setNodeBackendUserId,
-  clearNodeBackendUserId,
+  setNodeBackendAuthToken,
+  clearNodeBackendAuthToken,
   markNodeBackendSignedOut,
   isNodeBackendSignedOut,
   useNodeBackend,
@@ -37,9 +37,7 @@ export async function getCurrentUser() {
       err.status = 401;
       throw err;
     }
-    const user = await nodeRequest('/auth/me');
-    if (user?.id) setNodeBackendUserId(user.id);
-    return user;
+    return nodeRequest('/auth/me');
   }
 
   return base44.auth.me();
@@ -68,7 +66,7 @@ export async function uploadAvatar(file) {
 
 export function logout(_options = {}) {
   if (useNodeBackend) {
-    clearNodeBackendUserId();
+    clearNodeBackendAuthToken();
     markNodeBackendSignedOut();
     // Force auth re-check and trigger login flow.
     window.location.reload();
@@ -98,26 +96,57 @@ export async function signIn(identifier, password = '') {
   if (!useNodeBackend) {
     return base44.auth.me();
   }
-  const normalized = String(identifier || '').trim();
-  if (!normalized) {
-    const err = new Error('Email or user id is required');
+  const email = String(identifier || '').trim().toLowerCase();
+  if (!email) {
+    const err = new Error('Email is required');
     err.status = 400;
     throw err;
   }
 
-  const payload = normalized.includes('@')
-    ? { email: normalized.toLowerCase(), password }
-    : { userId: normalized, password };
-
-  const result = await nodeRequest('/auth/dev-login', { method: 'POST', body: payload });
+  const result = await nodeRequest('/auth/login', { method: 'POST', body: { email, password } });
   const user = result?.user || null;
+  const token = result?.token || null;
   if (!user?.id) {
     const err = new Error('Invalid login response');
     err.status = 500;
     throw err;
   }
+  if (!token) {
+    const err = new Error('Missing access token');
+    err.status = 500;
+    throw err;
+  }
 
-  setNodeBackendUserId(user.id);
+  setNodeBackendAuthToken(token);
   return user;
+}
+
+export async function acceptInvite(token, password) {
+  const result = await nodeRequest(`/auth/accept-invite/${encodeURIComponent(token)}`, {
+    method: 'POST',
+    body: { password },
+  });
+  if (result?.token) {
+    setNodeBackendAuthToken(result.token);
+  }
+  return result;
+}
+
+export async function forgotPassword(email) {
+  return nodeRequest('/auth/forgot-password', {
+    method: 'POST',
+    body: { email: String(email || '').trim().toLowerCase() },
+  });
+}
+
+export async function resetPassword(token, password) {
+  const result = await nodeRequest(`/auth/reset-password/${encodeURIComponent(token)}`, {
+    method: 'POST',
+    body: { password },
+  });
+  if (result?.token) {
+    setNodeBackendAuthToken(result.token);
+  }
+  return result;
 }
 

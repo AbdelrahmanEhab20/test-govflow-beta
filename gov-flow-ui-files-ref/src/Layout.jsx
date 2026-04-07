@@ -84,7 +84,20 @@ export default function Layout({ children, currentPageName }) {
     return storedRole ? storedRole : ROLES.ADMIN;
   });
   const navigate = useNavigate();
-  const { logout: authLogout } = useAuth();
+  const { logout: authLogout, appPublicSettings } = useAuth();
+  const branding = appPublicSettings?.public_settings || {};
+  const appName = branding.appName || 'GovFlow';
+  const companyName = branding.companyName || appName;
+  const sidebarTitle = branding.sidebarTitle || companyName;
+  const tagline = branding.tagline || appName;
+  const logoUrl = branding.logoUrl || '';
+  const companyInitials = companyName
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase() || 'GV';
 
   const { data: user } = useQuery({
     queryKey: ['currentUser'],
@@ -198,12 +211,20 @@ export default function Layout({ children, currentPageName }) {
           {/* Logo */}
           <div className="h-16 flex items-center justify-between px-6 border-b border-slate-100 dark:border-slate-700">
             <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center">
-              <span className="text-white font-bold text-lg">TD</span>
-            </div>
+            {logoUrl ? (
+              <img
+                src={logoUrl}
+                alt={`${companyName} logo`}
+                className="w-10 h-10 rounded-xl object-cover border border-slate-200"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center">
+                <span className="text-white font-bold text-lg">{companyInitials}</span>
+              </div>
+            )}
             <div>
-              <h1 className="font-semibold text-slate-900 dark:text-white text-sm">Tourism Development</h1>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Workflow System</p>
+              <h1 className="font-semibold text-slate-900 dark:text-white text-sm">{sidebarTitle}</h1>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{tagline}</p>
             </div>
             </div>
             <Button 

@@ -24,6 +24,32 @@ export const AuthProvider = ({ children }) => {
       try {
         const publicSettings = await getAppPublicSettings();
         setAppPublicSettings(publicSettings);
+        const branding = publicSettings?.public_settings || {};
+        const appName = branding.appName;
+        if (appName && typeof document !== 'undefined') {
+          document.title = appName;
+        }
+        if (typeof document !== 'undefined') {
+          if (branding.primaryColor) {
+            document.documentElement.style.setProperty('--brand-primary-color', branding.primaryColor);
+          }
+          if (branding.secondaryColor) {
+            document.documentElement.style.setProperty('--brand-secondary-color', branding.secondaryColor);
+          }
+          if (branding.accentColor) {
+            document.documentElement.style.setProperty('--brand-accent-color', branding.accentColor);
+          }
+          const faviconUrl = branding.faviconUrl;
+          if (faviconUrl) {
+            let favicon = document.querySelector("link[rel='icon']");
+            if (!favicon) {
+              favicon = document.createElement('link');
+              favicon.setAttribute('rel', 'icon');
+              document.head.appendChild(favicon);
+            }
+            favicon.setAttribute('href', faviconUrl);
+          }
+        }
         
         // For local/mock mode we always load the current user immediately.
         await checkUserAuth();

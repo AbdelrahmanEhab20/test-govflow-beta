@@ -42,7 +42,7 @@ export default function Profile() {
     full_name: '',
     full_name_ar: '',
     phone: '',
-    department: 'Tourism Development',
+    department: 'General',
     position: ''
   });
   const [avatarLoading, setAvatarLoading] = useState(false);
@@ -58,7 +58,7 @@ export default function Profile() {
         full_name: targetUser.full_name || '',
         full_name_ar: targetUser.full_name_ar || '',
         phone: targetUser.phone || '',
-        department: targetUser.department || 'Tourism Development',
+        department: targetUser.department || 'General',
         position: targetUser.position || ''
       });
     }

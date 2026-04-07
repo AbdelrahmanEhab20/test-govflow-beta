@@ -35,6 +35,17 @@ const UserSchema = new mongoose.Schema(
     full_name: { type: String, required: true },
     full_name_ar: { type: String },
     email: { type: String, required: true, index: true },
+    password_hash: { type: String, select: false },
+    status: {
+      type: String,
+      enum: ['pending', 'active', 'inactive'],
+      default: 'pending',
+      index: true,
+    },
+    invite_token: { type: String, index: true },
+    invite_token_expires: { type: Date },
+    reset_token: { type: String, index: true },
+    reset_token_expires: { type: Date },
     role: { type: String, default: 'user', index: true },
 
     department: { type: String },

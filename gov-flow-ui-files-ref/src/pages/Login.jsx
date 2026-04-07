@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Mail, Lock, Apple, Eye, EyeOff } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 
 function GoogleIcon() {
@@ -25,17 +25,9 @@ function MicrosoftIcon() {
   );
 }
 
-function FacebookIcon() {
-  return (
-    <div className="w-5 h-5 rounded-full bg-[#1877F2] text-white flex items-center justify-center text-xs font-semibold" aria-hidden="true">
-      f
-    </div>
-  );
-}
-
 export default function Login() {
   const navigate = useNavigate();
-  const { signIn, isLoadingAuth } = useAuth();
+  const { signIn, isLoadingAuth, appPublicSettings } = useAuth();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -52,38 +44,36 @@ export default function Login() {
     }
   };
 
-  const handleProviderClick = () => {
-    setError('Provider auth is not enabled in local backend mode.');
-  };
+  const appName = appPublicSettings?.public_settings?.appName || 'GovFlow';
+  const companyName = appPublicSettings?.public_settings?.companyName || 'GovFlow';
+  const logoUrl = appPublicSettings?.public_settings?.logoUrl || '';
+  const showGovflowCredit = appPublicSettings?.public_settings?.showGovflowCredit !== false;
+  const govflowCreditText = appPublicSettings?.public_settings?.govflowCreditText || 'Powered by GovFlow';
 
   return (
     <div className="min-h-screen bg-slate-100 flex items-center justify-center px-4">
       <div className="w-full max-w-md bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8">
         <div className="flex justify-center mb-5">
-          <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-white text-2xl font-bold">
-            GF
-          </div>
+          {logoUrl ? (
+            <img src={logoUrl} alt={`${companyName} logo`} className="w-20 h-20 object-contain rounded-xl" />
+          ) : (
+            <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-white text-2xl font-bold">
+              GF
+            </div>
+          )}
         </div>
 
-        <h1 className="text-3xl font-bold text-slate-900 text-center">Welcome to GovFlow</h1>
+        <h1 className="text-3xl font-bold text-slate-900 text-center">Welcome to {appName}</h1>
         <p className="text-slate-500 text-center mt-2 mb-6">Sign in to continue</p>
 
         <div className="space-y-3 mb-5">
-          <button type="button" onClick={handleProviderClick} className="w-full h-12 rounded-xl border border-slate-200 flex items-center justify-center gap-2 text-slate-700 hover:bg-slate-50">
+          <button type="button" disabled className="w-full h-12 rounded-xl border border-slate-200 flex items-center justify-center gap-2 text-slate-500 bg-slate-50 cursor-not-allowed">
             <GoogleIcon />
-            Continue with Google
+            Google sign-in (coming soon)
           </button>
-          <button type="button" onClick={handleProviderClick} className="w-full h-12 rounded-xl border border-slate-200 flex items-center justify-center gap-2 text-slate-700 hover:bg-slate-50">
+          <button type="button" disabled className="w-full h-12 rounded-xl border border-slate-200 flex items-center justify-center gap-2 text-slate-500 bg-slate-50 cursor-not-allowed">
             <MicrosoftIcon />
-            Continue with Microsoft
-          </button>
-          <button type="button" onClick={handleProviderClick} className="w-full h-12 rounded-xl border border-slate-200 flex items-center justify-center gap-2 text-slate-700 hover:bg-slate-50">
-            <FacebookIcon />
-            Continue with Facebook
-          </button>
-          <button type="button" onClick={handleProviderClick} className="w-full h-12 rounded-xl border border-slate-200 flex items-center justify-center gap-2 text-slate-700 hover:bg-slate-50">
-            <Apple className="w-5 h-5 text-slate-900" />
-            Continue with Apple
+            Microsoft sign-in (coming soon)
           </button>
         </div>
 
@@ -94,12 +84,12 @@ export default function Login() {
         </div>
 
         <form className="space-y-3" onSubmit={handleSubmit}>
-          <label className="block text-sm text-slate-600 mb-1">Email or User ID</label>
+          <label className="block text-sm text-slate-600 mb-1">Email</label>
           <div className="h-12 rounded-xl bg-slate-100 border border-slate-200 flex items-center px-3 gap-2">
             <Mail className="w-4 h-4 text-slate-400" />
             <input
               className="w-full bg-transparent outline-none text-slate-900"
-              placeholder="user1 or ahmed.mansouri@tourism.gov"
+              placeholder="name@company.com"
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
               autoComplete="username"
@@ -129,6 +119,12 @@ export default function Login() {
 
           {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
+          <div className="text-right">
+            <Link to="/forgot-password" className="text-sm text-blue-600 hover:text-blue-700">
+              Forgot password?
+            </Link>
+          </div>
+
           <button
             type="submit"
             disabled={isLoadingAuth}
@@ -136,6 +132,8 @@ export default function Login() {
           >
             {isLoadingAuth ? 'Signing in...' : 'Sign in'}
           </button>
+          <p className="text-xs text-slate-500 text-center">{companyName} beta</p>
+          {showGovflowCredit ? <p className="text-[11px] text-slate-400 text-center">{govflowCreditText}</p> : null}
         </form>
       </div>
     </div>

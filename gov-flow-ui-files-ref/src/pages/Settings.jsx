@@ -466,7 +466,7 @@ export default function Settings() {
                 <div>
                   <Label>Department Name</Label>
                   <Input
-                    value="Tourism Development Department"
+                    value="Graviton Ventures"
                     disabled
                     className="mt-1.5 bg-slate-50" />
 

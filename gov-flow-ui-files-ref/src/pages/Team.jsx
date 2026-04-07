@@ -61,11 +61,11 @@ export default function Team() {
   });
 
   // Filter users to show only those in the same department as current user
-  const currentUserDepartment = currentUser?.department || 'Tourism Development';
+  const currentUserDepartment = currentUser?.department || 'General';
   const isManager = currentUser?.role === 'admin' || currentUser?.role === 'department_manager' || currentUser?.role === 'department_admin';
   
   const filteredUsers = users.filter(user => {
-    const userDept = user.department || 'Tourism Development';
+    const userDept = user.department || 'General';
     if (userDept !== currentUserDepartment) return false;
     
     // For managers, show direct reports (team members and dept managers if admin)
@@ -92,7 +92,7 @@ export default function Team() {
 
   // Group users by department
   const usersByDepartment = filteredUsers.reduce((acc, user) => {
-    const dept = user.department || 'Tourism Development';
+    const dept = user.department || 'General';
     if (!acc[dept]) acc[dept] = [];
     acc[dept].push(user);
     return acc;
@@ -226,7 +226,7 @@ export default function Team() {
                     </div>
 
                     <div className="mt-4 space-y-2">
-                      <p className="text-sm text-slate-500 dark:text-slate-400">{user.department || 'Tourism Development'}</p>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">{user.department || 'General'}</p>
                       
                       <div className="flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
                         <a href={`mailto:${user.email}`} className="flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">

@@ -101,6 +101,11 @@ export default function OnboardingWizard({ user, onComplete }) {
 
   const totalSteps = 5;
 
+  const markOnboardingCompleted = async () => {
+    await updateMe({ onboarding_completed: true });
+    queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+  };
+
   const handleFinish = async () => {
     setSaving(true);
     try {
@@ -111,13 +116,37 @@ export default function OnboardingWizard({ user, onComplete }) {
       } else {
         await createNotificationPreference(prefData);
       }
-      await updateMe({ onboarding_completed: true });
-      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+      await markOnboardingCompleted();
     } catch (e) {
       console.error(e);
     } finally {
       setSaving(false);
       onComplete();
+    }
+  };
+
+  const handleSkipOnboarding = async () => {
+    setSaving(true);
+    try {
+      await markOnboardingCompleted();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSaving(false);
+      onComplete();
+    }
+  };
+
+  const handleFeatureClick = async (page) => {
+    setSaving(true);
+    try {
+      await markOnboardingCompleted();
+      onComplete();
+      navigate(createPageUrl(page));
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -150,7 +179,7 @@ export default function OnboardingWizard({ user, onComplete }) {
         {FEATURES.map(({ icon: Icon, color, title, desc, page }) => (
           <button
             key={page}
-            onClick={() => { onComplete(); navigate(createPageUrl(page)); }}
+            onClick={() => handleFeatureClick(page)}
             className="flex items-start gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-700 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 transition-all text-left group"
           >
             <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${color}`}>
@@ -279,8 +308,9 @@ export default function OnboardingWizard({ user, onComplete }) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => step > 0 ? setStep(s => s - 1) : onComplete()}
+              onClick={() => step > 0 ? setStep(s => s - 1) : handleSkipOnboarding()}
               className="text-slate-500"
+              disabled={saving}
             >
               {step === 0 ? "Skip" : <><ChevronLeft className="w-4 h-4 mr-1" />Back</>}
             </Button>

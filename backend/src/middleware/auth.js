@@ -1,15 +1,21 @@
 import { asyncHandler, createHttpError } from './errorHandler.js';
 import { User } from '../models/index.js';
 import { config } from '../config/index.js';
+import { verifyAccessToken } from '../services/authService.js';
 
-function getUserIdFromRequest(req) {
-  // Simple dev strategy: either X-User-Id header or Bearer <userId>
+function getLegacyUserId(req) {
+  if (!config.allowLegacyUserHeader) return null;
   const headerId = req.header('X-User-Id') || req.header('x-user-id');
-  if (headerId) return headerId.trim();
+  if (headerId) {
+    return headerId.trim();
+  }
+  return null;
+}
 
+function getBearerToken(req) {
   const auth = req.header('Authorization') || req.header('authorization');
   if (auth && auth.toLowerCase().startsWith('bearer ')) {
-    return auth.slice(7).trim();
+    return auth.slice(7).trim() || null;
   }
   return null;
 }
@@ -19,29 +25,22 @@ function getUserIdFromRequest(req) {
  * Does NOT throw on missing/invalid user; use `requireAuth` for that.
  */
 export const attachUser = asyncHandler(async (req, _res, next) => {
-  const userId = getUserIdFromRequest(req);
+  let userId = null;
+  const token = getBearerToken(req);
+  if (token) {
+    const payload = verifyAccessToken(token);
+    userId = payload?.sub ? String(payload.sub) : null;
+  }
+
+  if (!userId) {
+    userId = getLegacyUserId(req);
+  }
   if (!userId) {
     req.user = null;
     return next();
   }
 
-  let user = await User.findOne({ id: userId }).lean();
-
-  // Dev convenience: optionally auto-create a basic user if not found.
-  if (!user && process.env.AUTO_CREATE_DEV_USER === 'true') {
-    const now = new Date().toISOString();
-    const doc = await User.create({
-      id: userId,
-      tenantId: config.defaultTenantId,
-      full_name: `Dev User ${userId}`,
-      email: `${userId}@local.test`,
-      role: 'admin',
-      created_date: now,
-      updated_date: now,
-    });
-    user = doc.toObject();
-  }
-
+  const user = await User.findOne({ id: userId }).lean();
   req.user = user || null;
   return next();
 });
