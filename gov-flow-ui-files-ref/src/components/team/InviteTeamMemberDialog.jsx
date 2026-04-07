@@ -118,9 +118,9 @@ export default function InviteTeamMemberDialog({ departments }) {
                   <SelectValue placeholder="Select department or create new" />
                 </SelectTrigger>
                 <SelectContent>
-                  {departments.map(dept => (
-                    <SelectItem key={dept} value={dept}>
-                      {dept}
+                  {departments.map((dept) => (
+                    <SelectItem key={dept.id || dept.name} value={dept.name}>
+                      {dept.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

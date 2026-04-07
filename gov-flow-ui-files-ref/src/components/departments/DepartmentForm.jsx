@@ -146,7 +146,7 @@ export default function DepartmentForm({ department, onClose, onSuccess }) {
                   <SelectValue placeholder="Select parent department" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={null}>None</SelectItem>
+                  <SelectItem value="">None</SelectItem>
                   {allDepartments
                     .filter(d => d.id !== department?.id)
                     .map(dept => (
@@ -193,7 +193,7 @@ export default function DepartmentForm({ department, onClose, onSuccess }) {
                   <SelectValue placeholder="Select manager" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={null}>None</SelectItem>
+                  <SelectItem value="">None</SelectItem>
                   {users.map(user => (
                     <SelectItem key={user.id} value={user.id}>
                       {user.full_name}
