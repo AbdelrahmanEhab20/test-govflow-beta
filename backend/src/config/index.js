@@ -33,7 +33,9 @@ function validateProductionEnv() {
   const requiredVars = [
     'JWT_SECRET',
     'APP_URL',
-    'RESEND_API_KEY',
+    'SENDGRID_API_KEY',
+    'SENDGRID_INVITE_TEMPLATE_ID',
+    'SENDGRID_RESET_TEMPLATE_ID',
     'EMAIL_FROM',
     'FRONTEND_URL',
     'CORS_ORIGINS',
@@ -66,8 +68,12 @@ export const config = {
   mongoUri: process.env.MONGO_URI || 'mongodb://localhost:27017/govflow_dev',
   jwtSecret: process.env.JWT_SECRET || 'govflow-dev-secret',
   appUrl: process.env.APP_URL || 'http://localhost:5173',
-  resendApiKey: process.env.RESEND_API_KEY || '',
   emailFrom: process.env.EMAIL_FROM || 'GovFlow <onboarding@govflow.local>',
+  sendgrid: {
+    apiKey: process.env.SENDGRID_API_KEY || '',
+    inviteTemplateId: process.env.SENDGRID_INVITE_TEMPLATE_ID || '',
+    resetTemplateId: process.env.SENDGRID_RESET_TEMPLATE_ID || '',
+  },
   branding: {
     appName: process.env.BRAND_APP_NAME || 'GovFlow',
     companyName: process.env.BRAND_COMPANY_NAME || 'GovFlow',
