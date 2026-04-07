@@ -19,6 +19,7 @@ import { Loader2, Plus, X } from "lucide-react";
 import DepartmentMembers from "./DepartmentMembers";
 
 export default function DepartmentForm({ department, onClose, onSuccess }) {
+  const NONE_OPTION = "__none__";
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     name: '',
@@ -134,6 +135,14 @@ export default function DepartmentForm({ department, onClose, onSuccess }) {
               <Select
                 value={formData.parent_department_id || ''}
                 onValueChange={(value) => {
+                  if (value === NONE_OPTION) {
+                    setFormData(prev => ({
+                      ...prev,
+                      parent_department_id: '',
+                      parent_department_name: '',
+                    }));
+                    return;
+                  }
                   const selectedDept = allDepartments.find(d => d.id === value);
                   setFormData(prev => ({
                     ...prev,
@@ -146,7 +155,7 @@ export default function DepartmentForm({ department, onClose, onSuccess }) {
                   <SelectValue placeholder="Select parent department" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value={NONE_OPTION}>None</SelectItem>
                   {allDepartments
                     .filter(d => d.id !== department?.id)
                     .map(dept => (
@@ -187,13 +196,15 @@ export default function DepartmentForm({ department, onClose, onSuccess }) {
               <Label>Manager</Label>
               <Select
                 value={formData.manager_user_id}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, manager_user_id: value }))}
+                onValueChange={(value) =>
+                  setFormData(prev => ({ ...prev, manager_user_id: value === NONE_OPTION ? '' : value }))
+                }
               >
                 <SelectTrigger className="mt-1.5">
                   <SelectValue placeholder="Select manager" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value={NONE_OPTION}>None</SelectItem>
                   {users.map(user => (
                     <SelectItem key={user.id} value={user.id}>
                       {user.full_name}

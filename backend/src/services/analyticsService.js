@@ -1,15 +1,44 @@
-import { Task, TeamMember } from '../models/index.js';
+import { Task, TeamMember, User, Department } from '../models/index.js';
 import { config } from '../config/index.js';
 
 function withTenant(filter = {}) {
   return { tenantId: config.defaultTenantId, ...filter };
 }
 
-function computeLeaderboard({ initiatives, teamMembers, startDate, endDate, sector, department }) {
+function computeLeaderboard({ initiatives, teamMembers, users, departments, startDate, endDate, sector, department }) {
   const memberInfoMap = {};
   for (const m of teamMembers) {
     if (m?.name) memberInfoMap[m.name] = m;
   }
+  const usersById = {};
+  for (const u of users || []) {
+    if (u?.id) usersById[u.id] = u;
+  }
+  const departmentSectorMap = {};
+  for (const d of departments || []) {
+    if (d?.name) departmentSectorMap[d.name] = d.sector || '';
+  }
+
+  const resolveMemberProfile = (taskOrMember = {}) => {
+    const fromTeam = taskOrMember?.name ? memberInfoMap[taskOrMember.name] : null;
+    const fromTaskLead = taskOrMember?.lead_user_name ? memberInfoMap[taskOrMember.lead_user_name] : null;
+    const fromUser = taskOrMember?.lead_user_id ? usersById[taskOrMember.lead_user_id] : null;
+    const source = fromTeam || fromTaskLead || {};
+    const departmentName =
+      source.department_name ||
+      fromUser?.department ||
+      taskOrMember?.department ||
+      'Unknown';
+    const sectorName =
+      source.sector_name ||
+      departmentSectorMap[departmentName] ||
+      'Unknown';
+    return {
+      job_title: source.job_title || fromUser?.position || '',
+      department: departmentName,
+      sector: sectorName,
+    };
+  };
 
   let filtered = (initiatives || []).filter((i) => !i.is_archived);
   if (startDate) filtered = filtered.filter((i) => !i.due_date || i.due_date >= startDate);
@@ -17,10 +46,9 @@ function computeLeaderboard({ initiatives, teamMembers, startDate, endDate, sect
 
   if (sector || department) {
     filtered = filtered.filter((i) => {
-      const m = memberInfoMap[i.lead_user_name];
-      if (!m) return false;
-      if (sector && m.sector_name !== sector) return false;
-      if (department && m.department_name !== department) return false;
+      const m = resolveMemberProfile(i);
+      if (sector && m.sector !== sector) return false;
+      if (department && m.department !== department) return false;
       return true;
     });
   }
@@ -28,11 +56,12 @@ function computeLeaderboard({ initiatives, teamMembers, startDate, endDate, sect
   const memberStats = {};
   for (const m of teamMembers || []) {
     if (!m?.name) continue;
+    const profile = resolveMemberProfile({ name: m.name });
     memberStats[m.name] = {
       name: m.name,
-      job_title: m.job_title || '',
-      department: m.department_name || 'Unknown',
-      sector: m.sector_name || 'Unknown',
+      job_title: profile.job_title,
+      department: profile.department,
+      sector: profile.sector,
       total: 0,
       completed: 0,
       in_progress: 0,
@@ -46,12 +75,12 @@ function computeLeaderboard({ initiatives, teamMembers, startDate, endDate, sect
     const name = init.lead_user_name;
     if (!name) continue;
     if (!memberStats[name]) {
-      const m = memberInfoMap[name] || {};
+      const profile = resolveMemberProfile(init);
       memberStats[name] = {
         name,
-        job_title: m.job_title || '',
-        department: m.department_name || 'Unknown',
-        sector: m.sector_name || 'Unknown',
+        job_title: profile.job_title,
+        department: profile.department,
+        sector: profile.sector,
         total: 0,
         completed: 0,
         in_progress: 0,
@@ -182,9 +211,13 @@ function computeLeaderboard({ initiatives, teamMembers, startDate, endDate, sect
 export async function getLeaderboardData(params = {}) {
   const initiatives = await Task.find(withTenant()).lean().exec();
   const teamMembers = await TeamMember.find(withTenant()).lean().exec();
+  const users = await User.find(withTenant()).lean().exec();
+  const departments = await Department.find(withTenant()).lean().exec();
   return computeLeaderboard({
     initiatives,
     teamMembers,
+    users,
+    departments,
     startDate: params.startDate,
     endDate: params.endDate,
     sector: params.sector,
