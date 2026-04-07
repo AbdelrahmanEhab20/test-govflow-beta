@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Search, Filter, X, Loader2, Settings } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import KanbanColumn from '../components/kanban/KanbanColumn';
 import KanbanTaskCard from '../components/kanban/KanbanTaskCard';
 import KanbanFilters from '../components/kanban/KanbanFilters';
@@ -68,6 +69,9 @@ export default function KanbanBoard() {
     mutationFn: ({ taskId, data }) => updateTask(taskId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    },
+    onError: (error) => {
+      toast.error(error?.message || 'Unable to move task.');
     },
   });
 
@@ -132,11 +136,15 @@ export default function KanbanBoard() {
     if ([ROLES.ADMIN, ROLES.DEPARTMENT_ADMIN, ROLES.DEPARTMENT_MANAGER].includes(user?.role)) {
       return true;
     }
-    // Team members can only drag their own tasks
-    if (user?.role === ROLES.TEAM_MEMBER) {
+    // Team members/users can only drag their own tasks
+    if ([ROLES.TEAM_MEMBER, ROLES.USER].includes(user?.role)) {
       return task.lead_user_id === user?.id;
     }
     return false;
+  };
+
+  const canMarkDone = () => {
+    return [ROLES.ADMIN, ROLES.DEPARTMENT_ADMIN, ROLES.DEPARTMENT_MANAGER, ROLES.EDITOR].includes(user?.role);
   };
 
   const handleDragEnd = (result) => {
@@ -158,6 +166,12 @@ export default function KanbanBoard() {
 
     const targetStageId = destination.droppableId;
     const targetStage = workflowStages.find((s) => s.id === targetStageId);
+    const targetStageName = String(targetStage?.name || '').toLowerCase();
+
+    if (!canMarkDone() && (targetStageName === 'completed' || targetStageName === 'approved')) {
+      toast.error('Only managers/admins can move tasks to completed.');
+      return;
+    }
 
     const nextStatus = getNormalizedTaskStatus(
       { ...task, workflow_stage_id: targetStage?.id },

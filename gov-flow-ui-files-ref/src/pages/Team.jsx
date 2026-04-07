@@ -51,6 +51,10 @@ export default function Team() {
       toast.success(`Role updated to ${getRoleDisplayName(newRole)} successfully`);
     },
     onError: (error) => {
+      if (error?.status === 403) {
+        toast.error('You do not have permission to assign that role.');
+        return;
+      }
       toast.error(`Failed to update role: ${error.message}`);
     },
   });
@@ -60,18 +64,18 @@ export default function Team() {
     queryFn: () => listTasks(),
   });
 
-  // Filter users to show only those in the same department as current user
+  // Filter users by role scope.
   const currentUserDepartment = currentUser?.department || 'General';
   const isManager = currentUser?.role === 'admin' || currentUser?.role === 'department_manager' || currentUser?.role === 'department_admin';
   
   const filteredUsers = users.filter(user => {
     const userDept = user.department || 'General';
-    if (userDept !== currentUserDepartment) return false;
+    if (currentUser?.role !== 'admin' && userDept !== currentUserDepartment) return false;
     
     // For managers, show direct reports (team members and dept managers if admin)
     if (isManager) {
       if (currentUser?.role === 'admin') {
-        // Admin sees everyone in department
+        // Admin sees all users
       } else if (currentUser?.role === 'department_admin') {
         // Dept admin sees everyone except other admins
         if (user.role === 'admin') return false;
@@ -136,6 +140,7 @@ export default function Team() {
       case 'department_admin': return 'Dept Admin';
       case 'department_manager': return 'Dept Manager';
       case 'team_member': return 'Team Member';
+      case 'user': return 'User';
       default: return role || 'user';
     }
   };
@@ -144,7 +149,31 @@ export default function Team() {
     updateRoleMutation.mutate({ userId, newRole });
   };
 
-  const canChangeRole = currentUser?.role === 'admin';
+  const canChangeRole = currentUser?.role === 'admin' || currentUser?.role === 'department_admin';
+
+  const getAssignableRoles = () => {
+    if (currentUser?.role === 'admin') {
+      return [ROLES.ADMIN, ROLES.DEPARTMENT_ADMIN, ROLES.DEPARTMENT_MANAGER, ROLES.TEAM_MEMBER, ROLES.USER];
+    }
+    if (currentUser?.role === 'department_admin') {
+      return [ROLES.DEPARTMENT_MANAGER, ROLES.TEAM_MEMBER, ROLES.USER];
+    }
+    return [];
+  };
+
+  const getAssignableRolesForUser = (targetUser) => {
+    const allowedRoles = getAssignableRoles();
+    if (!targetUser) return allowedRoles;
+    if (currentUser?.role === 'department_admin') {
+      if (targetUser.role === ROLES.ADMIN) return [];
+      if ((targetUser.department || 'General') !== currentUserDepartment) return [];
+    }
+    if (targetUser.id === currentUser?.id && currentUser?.role !== 'admin') {
+      // Avoid accidental self-demotion for non-admin actors.
+      return [];
+    }
+    return allowedRoles;
+  };
 
   return (
     <div className="p-6 lg:p-8">
@@ -203,6 +232,7 @@ export default function Team() {
                           <Select
                             value={user.role || 'team_member'}
                             onValueChange={(newRole) => handleRoleChange(user.id, newRole)}
+                            disabled={getAssignableRolesForUser(user).length === 0}
                           >
                             <SelectTrigger className="w-[160px] h-7 mt-1 dark:bg-slate-800 dark:border-slate-600">
                               <Shield className="w-3 h-3 mr-1" />
@@ -211,10 +241,11 @@ export default function Team() {
                               </SelectValue>
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value={ROLES.ADMIN}>Admin</SelectItem>
-                              <SelectItem value={ROLES.DEPARTMENT_ADMIN}>Dept Admin</SelectItem>
-                              <SelectItem value={ROLES.DEPARTMENT_MANAGER}>Dept Manager</SelectItem>
-                              <SelectItem value={ROLES.TEAM_MEMBER}>Team Member</SelectItem>
+                              {getAssignableRolesForUser(user).map((roleValue) => (
+                                <SelectItem key={roleValue} value={roleValue}>
+                                  {getRoleDisplayName(roleValue)}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         ) : (

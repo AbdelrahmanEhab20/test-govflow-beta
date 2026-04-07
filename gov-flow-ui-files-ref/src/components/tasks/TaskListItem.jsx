@@ -38,12 +38,14 @@ import StatusBadge from "../shared/StatusBadge";
 import PriorityBadge from "../shared/PriorityBadge";
 import ProgressBar from "../shared/ProgressBar";
 import UserAvatar from "../shared/UserAvatar";
+import { ROLES } from "../shared/rbac";
 
 const STATUS_OPTIONS = ['not_started', 'in_progress', 'completed', 'on_hold', 'delayed'];
 
 export default function TaskListItem({
   task,
   users = [],
+  currentUser,
   onUpdate,
   onDelete,
   isSelected,
@@ -60,6 +62,11 @@ export default function TaskListItem({
   const isOverdue = task.due_date &&
   new Date(task.due_date) < new Date() &&
   task.status !== 'completed';
+
+  const isHigherRole = [ROLES.ADMIN, ROLES.DEPARTMENT_ADMIN, ROLES.DEPARTMENT_MANAGER, ROLES.EDITOR].includes(currentUser?.role);
+  const isOwnTask = task.lead_user_id === currentUser?.id;
+  const canProgressTask = isHigherRole || ((currentUser?.role === ROLES.TEAM_MEMBER || currentUser?.role === ROLES.USER) && isOwnTask);
+  const canCompleteTask = isHigherRole;
 
   const handleStatusChange = (newStatus) => {
     const updates = { status: newStatus };
@@ -144,7 +151,9 @@ export default function TaskListItem({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {STATUS_OPTIONS.map(s => (
+                  {STATUS_OPTIONS
+                    .filter((status) => canCompleteTask || status !== 'completed')
+                    .map(s => (
                     <SelectItem key={s} value={s}>
                       {s.replace('_', ' ')}
                     </SelectItem>
@@ -152,7 +161,7 @@ export default function TaskListItem({
                 </SelectContent>
               </Select>
             ) : (
-              <button onClick={() => setIsEditing('status')}>
+              <button onClick={() => canProgressTask && setIsEditing('status')} disabled={!canProgressTask}>
                 <StatusBadge status={task.status} size="sm" />
               </button>
             )}
@@ -173,14 +182,15 @@ export default function TaskListItem({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map(v => (
+                {[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, ...(canCompleteTask ? [100] : [])].map(v => (
                   <SelectItem key={v} value={String(v)}>{v}%</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           ) : (
             <button
-              onClick={() => setIsEditing('progress')}
+              onClick={() => canProgressTask && setIsEditing('progress')}
+              disabled={!canProgressTask}
               className="w-full"
             >
               <ProgressBar value={task.completion_percent || 0} size="sm" />
@@ -213,7 +223,7 @@ export default function TaskListItem({
               Edit Task
             </Link>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => handleStatusChange('completed')}>
+          <DropdownMenuItem onClick={() => handleStatusChange('completed')} disabled={!canCompleteTask}>
             <CheckCircle2 className="w-4 h-4 mr-2" />
             Mark Complete
           </DropdownMenuItem>
@@ -227,7 +237,11 @@ export default function TaskListItem({
                 <DropdownMenuItem
                   key={stage.id}
                   onClick={() => onUpdate(task.id, { workflow_stage_id: stage.id })}
-                  disabled={task.workflow_stage_id === stage.id}
+                  disabled={
+                    task.workflow_stage_id === stage.id ||
+                    !canProgressTask ||
+                    (!canCompleteTask && ['completed', 'approved'].includes(String(stage.name || '').toLowerCase()))
+                  }
                 >
                   {stage.name}
                 </DropdownMenuItem>

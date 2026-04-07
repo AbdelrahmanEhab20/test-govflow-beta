@@ -18,8 +18,6 @@ import {
   ListTodo,
   Trophy,
   BarChart3,
-  Bell,
-  UserCog,
   ChevronRight,
   ChevronLeft,
   Sparkles,
@@ -29,6 +27,7 @@ import {
   Users,
 } from "lucide-react";
 import { ROLES } from "@/components/shared/rbac";
+import { canAccessPage } from "@/components/shared/rbac";
 import { createPageUrl } from "../../utils";
 import { useNavigate } from "react-router-dom";
 
@@ -86,7 +85,6 @@ const FEATURES = [
 
 export default function OnboardingWizard({ user, onComplete }) {
   const [step, setStep] = useState(0); // 0=welcome, 1=features, 2=role, 3=notifications, 4=done
-  const [selectedRole, setSelectedRole] = useState(user?.role || ROLES.TEAM_MEMBER);
   const [notifPrefs, setNotifPrefs] = useState({
     notify_task_assigned: true,
     notify_task_assigned_email: true,
@@ -100,6 +98,8 @@ export default function OnboardingWizard({ user, onComplete }) {
   const navigate = useNavigate();
 
   const totalSteps = 5;
+  const currentRole = user?.role || ROLES.TEAM_MEMBER;
+  const availableFeatures = FEATURES.filter((feature) => canAccessPage(currentRole, feature.page));
 
   const markOnboardingCompleted = async () => {
     await updateMe({ onboarding_completed: true });
@@ -108,20 +108,30 @@ export default function OnboardingWizard({ user, onComplete }) {
 
   const handleFinish = async () => {
     setSaving(true);
+    let completed = false;
     try {
-      const existing = await listNotificationPreferencesForUser(user.id);
-      const prefData = { ...notifPrefs, user_id: user.id, user_email: user.email };
-      if (existing?.length > 0) {
-        await updateNotificationPreference(existing[0].id, prefData);
-      } else {
-        await createNotificationPreference(prefData);
+      try {
+        const existing = await listNotificationPreferencesForUser(user.id);
+        const prefData = { ...notifPrefs, user_id: user.id, user_email: user.email };
+        if (existing?.length > 0) {
+          await updateNotificationPreference(existing[0].id, prefData);
+        } else {
+          await createNotificationPreference(prefData);
+        }
+      } catch (prefError) {
+        // Preference save failure should not block onboarding completion.
+        console.error(prefError);
       }
+
       await markOnboardingCompleted();
+      completed = true;
     } catch (e) {
       console.error(e);
     } finally {
       setSaving(false);
-      onComplete();
+      if (completed) {
+        onComplete();
+      }
     }
   };
 
@@ -176,7 +186,7 @@ export default function OnboardingWizard({ user, onComplete }) {
       <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-1">What you can do</h2>
       <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">Here's a quick overview of the main sections:</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {FEATURES.map(({ icon: Icon, color, title, desc, page }) => (
+        {availableFeatures.map(({ icon: Icon, color, title, desc, page }) => (
           <button
             key={page}
             onClick={() => handleFeatureClick(page)}
@@ -192,38 +202,43 @@ export default function OnboardingWizard({ user, onComplete }) {
           </button>
         ))}
       </div>
-      <p className="text-xs text-slate-400 text-center pt-1">Click any feature to go there now, or continue below.</p>
+      {availableFeatures.length === 0 && (
+        <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-4 text-sm text-slate-500 dark:text-slate-400">
+          No feature shortcuts are available for your role yet. You can still continue and start using your assigned pages.
+        </div>
+      )}
+      <p className="text-xs text-slate-400 text-center pt-1">Only sections available for your role are shown here.</p>
     </div>,
 
     // Step 2 – Role
     <div key="role" className="space-y-4">
       <div>
-        <h2 className="text-lg font-bold text-slate-900 dark:text-white">What's your role?</h2>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">This helps us show you the right features. Your admin can always update this later.</p>
+        <h2 className="text-lg font-bold text-slate-900 dark:text-white">Your access level</h2>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Your account role is managed by administrators. This screen shows your current access.</p>
       </div>
       <div className="space-y-2">
         {ROLE_OPTIONS.map(opt => (
-          <button
+          <div
             key={opt.value}
-            onClick={() => setSelectedRole(opt.value)}
             className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left ${
-              selectedRole === opt.value
+              currentRole === opt.value
                 ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                : "border-slate-200 dark:border-slate-700 hover:border-slate-300"
+                : "border-slate-200 dark:border-slate-700 opacity-70"
             }`}
           >
             <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
-              selectedRole === opt.value ? "border-blue-500" : "border-slate-300"
+              currentRole === opt.value ? "border-blue-500" : "border-slate-300"
             }`}>
-              {selectedRole === opt.value && <div className="w-2 h-2 rounded-full bg-blue-500" />}
+              {currentRole === opt.value && <div className="w-2 h-2 rounded-full bg-blue-500" />}
             </div>
             <div>
               <p className="text-sm font-medium text-slate-800 dark:text-white">{opt.label}</p>
               <p className="text-xs text-slate-500 dark:text-slate-400">{opt.desc}</p>
             </div>
-          </button>
+          </div>
         ))}
       </div>
+      <p className="text-xs text-slate-400">Need a different role? Contact your admin from Team Management.</p>
     </div>,
 
     // Step 3 – Notifications

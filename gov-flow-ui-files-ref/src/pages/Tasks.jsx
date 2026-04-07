@@ -31,6 +31,8 @@ import EmptyState from "../components/shared/EmptyState";
 import { getCurrentUser } from "@/api/authApi";
 import { listTasks, updateTask, deleteTask } from "@/api/tasksApi";
 import { listUsers } from "@/api/usersApi";
+import { ROLES } from "@/components/shared/rbac";
+import { toast } from "react-hot-toast";
 
 export default function Tasks() {
   const [activeView, setActiveView] = useState('all');
@@ -67,6 +69,9 @@ export default function Tasks() {
   const updateTaskMutation = useMutation({
     mutationFn: ({ id, data }) => updateTask(id, data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+    onError: (error) => {
+      toast.error(error?.message || 'Unable to update task.');
+    },
   });
 
   const deleteTaskMutation = useMutation({
@@ -169,6 +174,11 @@ export default function Tasks() {
   };
 
   const handleBulkComplete = () => {
+    const canComplete = [ROLES.ADMIN, ROLES.DEPARTMENT_ADMIN, ROLES.DEPARTMENT_MANAGER, ROLES.EDITOR].includes(currentUser?.role);
+    if (!canComplete) {
+      toast.error('Only managers/admins can complete tasks.');
+      return;
+    }
     selectedTasks.forEach(id => {
       updateTaskMutation.mutate({ 
         id, 
@@ -310,6 +320,7 @@ export default function Tasks() {
               key={task.id}
               task={task}
               users={users}
+              currentUser={currentUser}
               onUpdate={handleUpdateTask}
               onDelete={handleDeleteTask}
               isSelected={selectedTasks.includes(task.id)}

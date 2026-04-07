@@ -59,7 +59,7 @@ router.patch(
   '/tasks/:id',
   requireAuth,
   asyncHandler(async (req, res) => {
-    const updated = await updateTask(req.params.id, req.body || {});
+    const updated = await updateTask(req.params.id, req.body || {}, req.user);
     res.json(updated);
   }),
 );

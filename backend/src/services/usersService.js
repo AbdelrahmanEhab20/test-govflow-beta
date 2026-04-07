@@ -12,6 +12,36 @@ function nowIso() {
   return new Date().toISOString();
 }
 
+function isAdmin(role) {
+  return role === 'admin';
+}
+
+function isDepartmentAdmin(role) {
+  return role === 'department_admin';
+}
+
+function isDepartmentManager(role) {
+  return role === 'department_manager';
+}
+
+function canAccessUser(actor, target) {
+  if (!actor || !target) return false;
+  if (isAdmin(actor.role)) return true;
+  if (actor.id === target.id) return true;
+  if (isDepartmentAdmin(actor.role)) {
+    return actor.department && target.department && actor.department === target.department && target.role !== 'admin';
+  }
+  if (isDepartmentManager(actor.role)) {
+    return (
+      actor.department &&
+      target.department &&
+      actor.department === target.department &&
+      ['team_member', 'user', 'department_manager'].includes(target.role)
+    );
+  }
+  return false;
+}
+
 function sanitizeUser(user) {
   if (!user) return null;
   const base = typeof user.toObject === 'function' ? user.toObject() : { ...user };
@@ -23,19 +53,55 @@ function sanitizeUser(user) {
   return base;
 }
 
-export async function listUsers() {
+export async function listUsers(actor = null) {
   const users = await User.find(withTenant())
     .sort({ created_date: -1 })
     .lean()
     .exec();
-  return users.map((user) => sanitizeUser(user));
+  const visibleUsers = users.filter((user) => {
+    if (!actor) return false;
+    if (isAdmin(actor.role)) return true;
+    if (actor.id === user.id) return true;
+    if (isDepartmentAdmin(actor.role) || isDepartmentManager(actor.role)) {
+      return actor.department && user.department && actor.department === user.department;
+    }
+    return false;
+  });
+  return visibleUsers.map((user) => sanitizeUser(user));
 }
 
-export async function updateUser(userId, data) {
+export async function updateUser(userId, data, actor = null) {
+  const target = await User.findOne(withTenant({ id: userId })).lean();
+  if (!target) {
+    throw createHttpError(404, 'User not found', 'USER_NOT_FOUND');
+  }
+  if (!canAccessUser(actor, target)) {
+    throw createHttpError(403, 'Forbidden', 'FORBIDDEN');
+  }
+
+  const allowedFields = [
+    'full_name',
+    'full_name_ar',
+    'phone',
+    'department',
+    'department_id',
+    'position',
+    'avatar_url',
+    'notification_preferences',
+    'mailboxes',
+    'onboarding_completed',
+  ];
+  const patch = {};
+  for (const field of allowedFields) {
+    if (Object.prototype.hasOwnProperty.call(data || {}, field)) {
+      patch[field] = data[field];
+    }
+  }
+
   const now = nowIso();
   const updated = await User.findOneAndUpdate(
     withTenant({ id: userId }),
-    { $set: { ...data, updated_date: now } },
+    { $set: { ...patch, updated_date: now } },
     { new: true },
   ).lean();
 
@@ -45,11 +111,45 @@ export async function updateUser(userId, data) {
   return sanitizeUser(updated);
 }
 
-export async function updateUserRole(userId, newRole) {
+export async function updateUserRole(userId, newRole, actor = null) {
   if (!newRole) {
     throw createHttpError(400, 'newRole is required', 'MISSING_ROLE');
   }
-  return updateUser(userId, { role: newRole });
+  const target = await User.findOne(withTenant({ id: userId })).lean();
+  if (!target) {
+    throw createHttpError(404, 'User not found', 'USER_NOT_FOUND');
+  }
+
+  if (isAdmin(actor?.role)) {
+    const updated = await User.findOneAndUpdate(
+      withTenant({ id: userId }),
+      { $set: { role: newRole, updated_date: nowIso() } },
+      { new: true },
+    ).lean();
+    if (!updated) {
+      throw createHttpError(404, 'User not found', 'USER_NOT_FOUND');
+    }
+    return sanitizeUser(updated);
+  }
+
+  if (isDepartmentAdmin(actor?.role)) {
+    const sameDepartment = actor.department && target.department && actor.department === target.department;
+    const allowedTarget = ['team_member', 'user', 'department_manager'].includes(target.role);
+    const allowedNewRole = ['team_member', 'user', 'department_manager'].includes(newRole);
+    if (sameDepartment && allowedTarget && allowedNewRole) {
+      const updated = await User.findOneAndUpdate(
+        withTenant({ id: userId }),
+        { $set: { role: newRole, updated_date: nowIso() } },
+        { new: true },
+      ).lean();
+      if (!updated) {
+        throw createHttpError(404, 'User not found', 'USER_NOT_FOUND');
+      }
+      return sanitizeUser(updated);
+    }
+  }
+
+  throw createHttpError(403, 'Forbidden', 'FORBIDDEN');
 }
 
 export async function inviteUser(invitePayload = {}) {

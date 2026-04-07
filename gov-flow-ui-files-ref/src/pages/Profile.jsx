@@ -9,8 +9,7 @@ import {
   Mail,
   Phone,
   Building,
-  Briefcase,
-  Upload
+  Briefcase
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,6 +45,7 @@ export default function Profile() {
     position: ''
   });
   const [avatarLoading, setAvatarLoading] = useState(false);
+  const isAdminEditingOther = user?.role === 'admin' && Boolean(selectedUserId);
 
   useEffect(() => {
     const targetUser = selectedUserId && user?.role === 'admin' 
@@ -68,6 +68,7 @@ export default function Profile() {
     mutationFn: (data) => updateMe(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+      queryClient.invalidateQueries({ queryKey: ['users'] });
       toast({
         title: "Profile updated",
         description: "Your profile has been saved successfully.",
@@ -96,6 +97,13 @@ export default function Profile() {
   };
 
   const handlePhotoUpload = async (e) => {
+    if (isAdminEditingOther) {
+      toast({
+        title: "Avatar upload disabled",
+        description: "Admins can upload only their own profile avatar.",
+      });
+      return;
+    }
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -143,12 +151,12 @@ export default function Profile() {
         <Card className="mb-6 dark:bg-slate-800 dark:border-slate-700">
           <CardContent className="p-4">
             <Label className="dark:text-slate-200 block mb-2">Edit User Profile</Label>
-            <Select value={selectedUserId || ''} onValueChange={(value) => setSelectedUserId(value || null)}>
+            <Select value={selectedUserId || '__self__'} onValueChange={(value) => setSelectedUserId(value === '__self__' ? null : value)}>
               <SelectTrigger className="dark:bg-slate-700 dark:border-slate-600 dark:text-white">
                 <SelectValue placeholder="Select user (or manage your own)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={null}>Your Profile</SelectItem>
+                <SelectItem value="__self__">Your Profile</SelectItem>
                 {users.map(u => (
                   <SelectItem key={u.id} value={u.id}>
                     {u.full_name} ({u.email})
@@ -217,10 +225,9 @@ export default function Profile() {
                 <Input
                   value={formData.full_name}
                   onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
-                  disabled={user?.role !== 'admin' || !selectedUserId}
-                  className="mt-1.5 bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-white disabled:dark:text-slate-400"
+                  className="mt-1.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
                 />
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{user?.role === 'admin' && selectedUserId ? 'Editable for admin' : 'Cannot be changed'}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{isAdminEditingOther ? 'Editing selected user' : 'Editing your profile'}</p>
               </div>
 
               <div>

@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { getCurrentUser } from "@/api/authApi";
 import { listDepartments, listTeams } from "@/api/departmentsApi";
+import { listUsers } from "@/api/usersApi";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,6 +38,11 @@ export default function DepartmentManagement() {
     queryFn: () => listTeams(),
   });
 
+  const { data: users = [] } = useQuery({
+    queryKey: ['users'],
+    queryFn: () => listUsers(),
+  });
+
   const { data: databaseDepartments = [] } = useQuery({
     queryKey: ['databaseDepartments'],
     queryFn: () => listDepartments(),
@@ -68,7 +74,21 @@ export default function DepartmentManagement() {
     );
   });
 
-  const filteredTeamMembers = teamMembers.filter(member => {
+  const normalizedTeamMembers = useMemo(() => {
+    if (teamMembers.length > 0) return teamMembers;
+    return users.map((user) => ({
+      id: user.id,
+      name: user.full_name || user.email,
+      email: user.email,
+      job_title: user.position || '',
+      department_name: user.department || 'General',
+      sector_name: '',
+      mobile_number: user.phone || '',
+      avatar_url: user.avatar_url || '',
+    }));
+  }, [teamMembers, users]);
+
+  const filteredTeamMembers = normalizedTeamMembers.filter(member => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
@@ -79,25 +99,10 @@ export default function DepartmentManagement() {
     );
   });
 
-  const derivedDepartments = Array.from(new Map(
-    teamMembers.map(member => [
-      member.department_name,
-      {
-        id: member.department_name,
-        name: member.department_name,
-        sector: member.sector_name,
-        description: '',
-        manager_name: member.reporting_to || 'TBD',
-        member_count: teamMembers.filter(m => m.department_name === member.department_name).length,
-        email: '',
-        phone: '',
-        is_active: true
-      }
-    ])
-  ).values())
-    .filter(d => d.name);
-
-  const filteredDepartmentsView = filteredDepartments.filter(dept => {
+  const filteredDepartmentsView = filteredDepartments.map((dept) => ({
+    ...dept,
+    member_count: normalizedTeamMembers.filter((member) => member.department_name === dept.name).length,
+  })).filter(dept => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
@@ -108,16 +113,16 @@ export default function DepartmentManagement() {
   });
 
   const sectors = Array.from(new Set(
-    teamMembers.map(member => member.sector_name).filter(s => s)
+    normalizedTeamMembers.map(member => member.sector_name).filter(s => s)
   ))
     .map(sectorName => ({
       name: sectorName,
-      departments: new Set(teamMembers
+      departments: new Set(normalizedTeamMembers
         .filter(m => m.sector_name === sectorName)
         .map(m => m.department_name)
         .filter(d => d)
       ).size,
-      members: teamMembers.filter(m => m.sector_name === sectorName).length
+      members: normalizedTeamMembers.filter(m => m.sector_name === sectorName).length
     }))
     .sort((a, b) => b.members - a.members)
     .filter(sector => {
@@ -225,13 +230,13 @@ export default function DepartmentManagement() {
           {activeView === 'departments' && (
             <DepartmentsView 
               departments={filteredDepartmentsView} 
-              teamMembers={teamMembers}
+              teamMembers={normalizedTeamMembers}
             />
           )}
           {activeView === 'hierarchy' && (
             <DepartmentHierarchyView 
               departments={databaseDepartments} 
-              teamMembers={teamMembers}
+              teamMembers={normalizedTeamMembers}
               onDepartmentSelect={(dept) => {
                 setEditingDept(dept);
                 setShowForm(true);
@@ -257,7 +262,7 @@ export default function DepartmentManagement() {
               <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Sectors</p>
             </div>
             <div>
-              <p className="text-3xl font-bold text-slate-900 dark:text-white">{teamMembers.length}</p>
+              <p className="text-3xl font-bold text-slate-900 dark:text-white">{normalizedTeamMembers.length}</p>
               <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Team Members</p>
             </div>
             <div>

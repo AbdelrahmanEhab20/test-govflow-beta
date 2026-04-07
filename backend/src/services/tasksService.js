@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { Task, Subtask, Comment, TaskDependency } from '../models/index.js';
+import { Task, Subtask, Comment, TaskDependency, WorkflowStage } from '../models/index.js';
 import { config } from '../config/index.js';
 import { createHttpError } from '../middleware/errorHandler.js';
 import { notifyAssigneeTaskAssigned } from './taskAssignmentNotifications.js';
@@ -18,6 +18,82 @@ function applySort(query, orderBy) {
 
 function nowIso() {
   return new Date().toISOString();
+}
+
+const HIGHER_ROLES = new Set(['admin', 'department_admin', 'department_manager', 'editor']);
+const MEMBER_ROLES = new Set(['team_member', 'user']);
+
+function resolveStepFromStatusOrStage({ status, stageName }) {
+  const normalizedStatus = String(status || '').trim().toLowerCase();
+  const normalizedStage = String(stageName || '').trim().toLowerCase();
+
+  if (normalizedStage === 'completed' || normalizedStage === 'approved' || normalizedStatus === 'completed') {
+    return 'completed';
+  }
+  if (normalizedStage === 'in review' || normalizedStage === 'review') {
+    return 'in_review';
+  }
+  if (normalizedStage === 'in progress' || normalizedStatus === 'in_progress') {
+    return 'in_progress';
+  }
+  return 'not_started';
+}
+
+async function enforceTaskWorkflowPermissions({ actor, existing, patch }) {
+  if (!actor?.id) {
+    throw createHttpError(401, 'Authentication required', 'AUTH_REQUIRED');
+  }
+  if (!patch || typeof patch !== 'object') return;
+
+  const actorRole = String(actor.role || '');
+  if (HIGHER_ROLES.has(actorRole)) return;
+  if (!MEMBER_ROLES.has(actorRole)) {
+    throw createHttpError(403, 'Forbidden', 'FORBIDDEN');
+  }
+
+  const isAssignee = existing.lead_user_id && existing.lead_user_id === actor.id;
+  if (!isAssignee) {
+    throw createHttpError(403, 'Only assigned members can update this task', 'FORBIDDEN_TASK_ASSIGNEE_ONLY');
+  }
+
+  const requestedFields = Object.keys(patch);
+  const allowedMemberFields = new Set(['status', 'workflow_stage_id', 'last_activity_at', 'completion_percent']);
+  const hasForbiddenField = requestedFields.some((field) => !allowedMemberFields.has(field));
+  if (hasForbiddenField) {
+    throw createHttpError(403, 'Members can only update task workflow progress', 'FORBIDDEN_TASK_PATCH');
+  }
+
+  let targetStageName = null;
+  if (patch.workflow_stage_id) {
+    const targetStage = await WorkflowStage.findOne(withTenant({ id: patch.workflow_stage_id })).lean();
+    targetStageName = targetStage?.name || null;
+  }
+  const currentStage = existing.workflow_stage_id
+    ? await WorkflowStage.findOne(withTenant({ id: existing.workflow_stage_id })).lean()
+    : null;
+
+  const currentStep = resolveStepFromStatusOrStage({
+    status: existing.status,
+    stageName: currentStage?.name,
+  });
+  const targetStep = resolveStepFromStatusOrStage({
+    status: patch.status ?? existing.status,
+    stageName: targetStageName ?? currentStage?.name,
+  });
+
+  const stepOrder = { not_started: 0, in_progress: 1, in_review: 2, completed: 3 };
+  if (targetStep === 'completed') {
+    throw createHttpError(403, 'Only managers/admins can complete tasks', 'FORBIDDEN_TASK_COMPLETE');
+  }
+  if (stepOrder[targetStep] < stepOrder[currentStep]) {
+    throw createHttpError(403, 'Members cannot move tasks backwards in workflow', 'FORBIDDEN_TASK_BACKWARD');
+  }
+  if (stepOrder[targetStep] > stepOrder[currentStep] + 1) {
+    throw createHttpError(403, 'Members must move tasks step-by-step', 'FORBIDDEN_TASK_SKIP_STEP');
+  }
+  if (Number(patch.completion_percent) >= 100) {
+    throw createHttpError(403, 'Only managers/admins can mark tasks complete', 'FORBIDDEN_TASK_COMPLETE');
+  }
 }
 
 // ─── Tasks ──────────────────────────────────────────────────────────────────────
@@ -61,12 +137,13 @@ export async function createTask(data) {
   return created;
 }
 
-export async function updateTask(id, patch) {
+export async function updateTask(id, patch, actor = null) {
   const now = nowIso();
   const existing = await Task.findOne(withTenant({ id })).lean();
   if (!existing) {
     throw createHttpError(404, 'Task not found', 'TASK_NOT_FOUND');
   }
+  await enforceTaskWorkflowPermissions({ actor, existing, patch });
   const previousLeadUserId = existing.lead_user_id;
 
   const updated = await Task.findOneAndUpdate(

@@ -9,8 +9,8 @@ const router = Router();
 router.get(
   '/users',
   requireAuth,
-  asyncHandler(async (_req, res) => {
-    const users = await listUsers();
+  asyncHandler(async (req, res) => {
+    const users = await listUsers(req.user);
     res.json(users);
   }),
 );
@@ -20,7 +20,7 @@ router.patch(
   '/users/:id',
   requireAuth,
   asyncHandler(async (req, res) => {
-    const user = await updateUser(req.params.id, req.body || {});
+    const user = await updateUser(req.params.id, req.body || {}, req.user);
     res.json(user);
   }),
 );
@@ -29,10 +29,10 @@ router.patch(
 router.post(
   '/users/:id/role',
   requireAuth,
-  requireRole('admin'),
+  requireRole('admin', 'department_admin'),
   asyncHandler(async (req, res) => {
     const { newRole } = req.body || {};
-    const user = await updateUserRole(req.params.id, newRole);
+    const user = await updateUserRole(req.params.id, newRole, req.user);
     res.json(user);
   }),
 );
@@ -41,7 +41,7 @@ router.post(
 router.post(
   '/users/invite',
   requireAuth,
-  requireRole('admin'),
+  requireRole('admin', 'department_admin'),
   asyncHandler(async (req, res) => {
     const invited = await inviteUser(req.body || {});
     res.status(201).json(invited);
