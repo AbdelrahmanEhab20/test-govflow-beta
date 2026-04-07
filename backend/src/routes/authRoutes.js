@@ -300,6 +300,7 @@ router.patch(
       'avatar_url',
       'notification_preferences',
       'mailboxes',
+      'onboarding_completed',
     ];
 
     const patch = {};

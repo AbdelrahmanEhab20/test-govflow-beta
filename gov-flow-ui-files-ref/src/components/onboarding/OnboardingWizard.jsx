@@ -272,7 +272,7 @@ export default function OnboardingWizard({ user, onComplete }) {
   const stepTitles = ["Welcome", "Features", "Your Role", "Notifications", "All Set!"];
 
   return (
-    <Dialog open={true}>
+    <Dialog open={true} onOpenChange={(open) => { if (!open) handleSkipOnboarding(); }}>
       <DialogContent className="max-w-lg p-0 overflow-hidden gap-0" hideClose>
         {/* Progress bar */}
         <div className="h-1 bg-slate-100 dark:bg-slate-800">
