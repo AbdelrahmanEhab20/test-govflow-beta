@@ -18,6 +18,10 @@ function getResendClient() {
   return new Resend(config.resendApiKey);
 }
 
+function getPublicAppBaseUrl() {
+  return String(config.frontendUrl || config.appUrl || '').replace(/\/$/, '');
+}
+
 export function normalizeEmail(value) {
   return String(value || '').trim().toLowerCase();
 }
@@ -64,30 +68,84 @@ export function tokenExpiry(minutes) {
 
 export async function sendInviteEmail(email, token) {
   const resend = getResendClient();
-  const inviteUrl = `${config.appUrl.replace(/\/$/, '')}/accept-invite/${encodeURIComponent(token)}`;
+  const inviteUrl = `${getPublicAppBaseUrl()}/accept-invite/${encodeURIComponent(token)}`;
   if (!resend) {
     logger.info('Invite URL generated (email skipped in local mode)', { email, inviteUrl });
-    return;
+    return { messageQueued: false, providerId: null };
   }
-  await resend.emails.send({
-    from: config.emailFrom,
-    to: [email],
-    subject: 'GovFlow invitation',
-    html: `<p>You have been invited to GovFlow.</p><p><a href="${inviteUrl}">Set your password</a></p>`,
+  let response;
+  try {
+    response = await resend.emails.send({
+      from: config.emailFrom,
+      to: [email],
+      subject: 'GovFlow invitation',
+      html: `<p>You have been invited to GovFlow.</p><p><a href="${inviteUrl}">Set your password</a></p>`,
+    });
+  } catch (error) {
+    logger.error('Invite email transport error', {
+      email,
+      provider: 'resend',
+      providerError: error?.message || String(error),
+    });
+    throw createHttpError(502, 'Invite email delivery failed', 'INVITE_EMAIL_DELIVERY_FAILED');
+  }
+
+  if (response?.error) {
+    logger.error('Invite email delivery failed', {
+      email,
+      provider: 'resend',
+      providerError: response.error,
+    });
+    throw createHttpError(502, 'Invite email delivery failed', 'INVITE_EMAIL_DELIVERY_FAILED');
+  }
+
+  const providerId = response?.data?.id || null;
+  logger.info('Invite email queued', {
+    email,
+    provider: 'resend',
+    providerId,
   });
+  return { messageQueued: true, providerId };
 }
 
 export async function sendPasswordResetEmail(email, token) {
   const resend = getResendClient();
-  const resetUrl = `${config.appUrl.replace(/\/$/, '')}/reset-password/${encodeURIComponent(token)}`;
+  const resetUrl = `${getPublicAppBaseUrl()}/reset-password/${encodeURIComponent(token)}`;
   if (!resend) {
     logger.info('Reset URL generated (email skipped in local mode)', { email, resetUrl });
-    return;
+    return { messageQueued: false, providerId: null };
   }
-  await resend.emails.send({
-    from: config.emailFrom,
-    to: [email],
-    subject: 'GovFlow password reset',
-    html: `<p>Use this link to reset your password.</p><p><a href="${resetUrl}">Reset password</a></p>`,
+  let response;
+  try {
+    response = await resend.emails.send({
+      from: config.emailFrom,
+      to: [email],
+      subject: 'GovFlow password reset',
+      html: `<p>Use this link to reset your password.</p><p><a href="${resetUrl}">Reset password</a></p>`,
+    });
+  } catch (error) {
+    logger.error('Password reset email transport error', {
+      email,
+      provider: 'resend',
+      providerError: error?.message || String(error),
+    });
+    throw createHttpError(502, 'Password reset email delivery failed', 'RESET_EMAIL_DELIVERY_FAILED');
+  }
+
+  if (response?.error) {
+    logger.error('Password reset email delivery failed', {
+      email,
+      provider: 'resend',
+      providerError: response.error,
+    });
+    throw createHttpError(502, 'Password reset email delivery failed', 'RESET_EMAIL_DELIVERY_FAILED');
+  }
+
+  const providerId = response?.data?.id || null;
+  logger.info('Password reset email queued', {
+    email,
+    provider: 'resend',
+    providerId,
   });
+  return { messageQueued: true, providerId };
 }

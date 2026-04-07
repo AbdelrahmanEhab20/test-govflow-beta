@@ -225,6 +225,45 @@ export async function getLeaderboardData(params = {}) {
   });
 }
 
+export async function getLeaderboardFilterOptions() {
+  const teamMembers = await TeamMember.find(withTenant()).lean().exec();
+  const users = await User.find(withTenant()).lean().exec();
+  const departments = await Department.find(withTenant()).lean().exec();
+
+  const departmentSet = new Set();
+  const sectorSet = new Set();
+
+  for (const dept of departments) {
+    if (dept?.name) departmentSet.add(dept.name);
+    if (dept?.sector) sectorSet.add(dept.sector);
+  }
+
+  for (const member of teamMembers) {
+    if (member?.department_name) departmentSet.add(member.department_name);
+    if (member?.sector_name) sectorSet.add(member.sector_name);
+  }
+
+  const departmentToSector = new Map();
+  for (const dept of departments) {
+    if (dept?.name && dept?.sector) {
+      departmentToSector.set(dept.name, dept.sector);
+    }
+  }
+
+  for (const user of users) {
+    if (user?.department) {
+      departmentSet.add(user.department);
+      const inferredSector = departmentToSector.get(user.department);
+      if (inferredSector) sectorSet.add(inferredSector);
+    }
+  }
+
+  return {
+    departments: [...departmentSet].sort((a, b) => a.localeCompare(b)),
+    sectors: [...sectorSet].sort((a, b) => a.localeCompare(b)),
+  };
+}
+
 export async function analyzeTeamPerformance(params = {}) {
   const initiatives = params.initiatives || [];
   const overdue = initiatives.filter((i) => i.status === 'delayed').length;

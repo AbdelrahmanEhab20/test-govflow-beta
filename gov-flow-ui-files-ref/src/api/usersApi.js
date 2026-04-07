@@ -30,10 +30,14 @@ export async function updateUserRole(userId, newRole) {
   return response?.data ?? response;
 }
 
-export async function inviteUser(email, role) {
+export async function inviteUser(payloadOrEmail, maybeRole) {
+  const payload = typeof payloadOrEmail === 'object' && payloadOrEmail !== null
+    ? payloadOrEmail
+    : { email: payloadOrEmail, role: maybeRole };
+
   if (useNodeBackend) {
-    return nodeRequest('/users/invite', { method: 'POST', body: { email, role } });
+    return nodeRequest('/users/invite', { method: 'POST', body: payload });
   }
-  return base44.users.inviteUser(email, role);
+  return base44.users.inviteUser(payload.email, payload.role);
 }
 

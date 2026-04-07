@@ -79,10 +79,7 @@ export default function Layout({ children, currentPageName }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [notificationPanelOpen, setNotificationPanelOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [activeRole, setActiveRole] = useState(() => {
-    const storedRole = localStorage.getItem('activeRole');
-    return storedRole ? storedRole : ROLES.ADMIN;
-  });
+  const [activeRole, setActiveRole] = useState(null);
   const navigate = useNavigate();
   const { logout: authLogout, appPublicSettings } = useAuth();
   const branding = appPublicSettings?.public_settings || {};
@@ -103,39 +100,6 @@ export default function Layout({ children, currentPageName }) {
     queryKey: ['currentUser'],
     queryFn: () => getCurrentUser(),
   });
-
-  useEffect(() => {
-    if (user && !activeRole) {
-      setActiveRole(user.role);
-      localStorage.setItem('activeRole', user.role);
-    }
-    // Show onboarding for new users who haven't completed it
-    if (user && !user.onboarding_completed) {
-      setShowOnboarding(true);
-    }
-  }, [user?.id]);
-
-  const { data: notifications = [] } = useQuery({
-    queryKey: ['notifications', user?.id],
-    queryFn: () => listNotificationsForUser(user?.id),
-    enabled: !!user?.id,
-  });
-  const unreadNotifications = (notifications || []).filter((n) => !n.is_read);
-
-  const { data: newEmails = [] } = useQuery({
-    queryKey: ['newEmails'],
-    queryFn: () => listEmails({ status_in_system: 'new' }, '-received_at', 500),
-  });
-
-  const handleLogout = () => {
-    authLogout(true);
-    localStorage.removeItem('activeRole');
-  };
-
-  const getInitials = (name) => {
-    if (!name) return "U";
-    return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
-  };
 
   const getAvailableSwitchRoles = (actualRole) => {
     if (!actualRole) return [];
@@ -160,7 +124,48 @@ export default function Layout({ children, currentPageName }) {
     return [];
   };
 
-  const { canAccessPage } = useRbac(activeRole);
+  useEffect(() => {
+    if (user?.role) {
+      const storedRole = localStorage.getItem('activeRole');
+      const switchableRoles = getAvailableSwitchRoles(user.role).map((roleOption) => roleOption.value);
+      const canUseStoredRole = storedRole && (storedRole === user.role || switchableRoles.includes(storedRole));
+      const nextRole = canUseStoredRole ? storedRole : user.role;
+      if (activeRole !== nextRole) {
+        setActiveRole(nextRole);
+      }
+      localStorage.setItem('activeRole', nextRole);
+    }
+
+    // Show onboarding for new users who haven't completed it
+    if (user && !user.onboarding_completed) {
+      setShowOnboarding(true);
+    }
+  }, [user?.id, user?.role, user?.onboarding_completed, activeRole]);
+
+  const { data: notifications = [] } = useQuery({
+    queryKey: ['notifications', user?.id],
+    queryFn: () => listNotificationsForUser(user?.id),
+    enabled: !!user?.id,
+  });
+  const unreadNotifications = (notifications || []).filter((n) => !n.is_read);
+
+  const { data: newEmails = [] } = useQuery({
+    queryKey: ['newEmails'],
+    queryFn: () => listEmails({ status_in_system: 'new' }, '-received_at', 500),
+  });
+
+  const handleLogout = () => {
+    authLogout(true);
+    localStorage.removeItem('activeRole');
+  };
+
+  const getInitials = (name) => {
+    if (!name) return "U";
+    return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+  };
+
+  const effectiveRole = activeRole || user?.role || null;
+  const { canAccessPage } = useRbac(effectiveRole);
   const availableSwitchRoles = getAvailableSwitchRoles(user?.role);
 
   const handleRoleSwitch = (role) => {
@@ -243,7 +248,7 @@ export default function Layout({ children, currentPageName }) {
               {navItems.map((item) => {
                 const isActive = currentPageName === item.page;
                 const Icon = item.icon;
-                const hasAccess = canAccessPage(activeRole, item.page);
+                const hasAccess = canAccessPage(effectiveRole, item.page);
                 
                 if (!hasAccess) return null;
 
@@ -269,7 +274,7 @@ export default function Layout({ children, currentPageName }) {
                 );
               })}
 
-              {(canAccessPage(activeRole, 'TeamPerformanceDashboard') || canAccessPage(activeRole, 'DepartmentManagement') || canAccessPage(activeRole, 'RoutingRules')) && (
+              {(canAccessPage(effectiveRole, 'TeamPerformanceDashboard') || canAccessPage(effectiveRole, 'DepartmentManagement') || canAccessPage(effectiveRole, 'RoutingRules')) && (
                 <>
                   <div className="pt-4 pb-2 px-4">
                     <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
@@ -279,7 +284,7 @@ export default function Layout({ children, currentPageName }) {
                   {adminItems.map((item) => {
                     const isActive = currentPageName === item.page;
                     const Icon = item.icon;
-                    const hasAccess = canAccessPage(activeRole, item.page);
+                    const hasAccess = canAccessPage(effectiveRole, item.page);
                     
                     if (!hasAccess) return null;
 
@@ -317,7 +322,7 @@ export default function Layout({ children, currentPageName }) {
                   </Avatar>
                   <div className="flex-1 text-left">
                     <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{user?.full_name}</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 capitalize">{activeRole?.replace(/_/g, ' ') || 'User'}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 capitalize">{effectiveRole?.replace(/_/g, ' ') || 'User'}</p>
                   </div>
                   <ChevronDown className="w-4 h-4 text-slate-400 dark:text-slate-500" />
                 </button>
@@ -339,7 +344,7 @@ export default function Layout({ children, currentPageName }) {
                       <DropdownMenuItem
                         key={roleOption.value}
                         onClick={() => handleRoleSwitch(roleOption.value)}
-                        className={activeRole === roleOption.value ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300' : ''}
+                        className={effectiveRole === roleOption.value ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300' : ''}
                       >
                         {roleOption.label}
                       </DropdownMenuItem>

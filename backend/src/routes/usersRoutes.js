@@ -43,8 +43,7 @@ router.post(
   requireAuth,
   requireRole('admin'),
   asyncHandler(async (req, res) => {
-    const { email, role } = req.body || {};
-    const invited = await inviteUser(email, role);
+    const invited = await inviteUser(req.body || {});
     res.status(201).json(invited);
   }),
 );

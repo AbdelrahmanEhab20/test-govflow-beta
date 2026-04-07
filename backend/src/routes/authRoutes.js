@@ -1,11 +1,11 @@
 import { Router } from 'express';
 import path from 'node:path';
-import { v4 as uuidv4 } from 'uuid';
 import { config } from '../config/index.js';
 import { asyncHandler, createHttpError } from '../middleware/errorHandler.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { uploadAvatarMiddleware } from '../middleware/upload.js';
 import { User } from '../models/index.js';
+import { inviteUser } from '../services/usersService.js';
 import {
   normalizeEmail,
   ensureStrongPassword,
@@ -14,7 +14,6 @@ import {
   signAccessToken,
   generateOpaqueToken,
   tokenExpiry,
-  sendInviteEmail,
   sendPasswordResetEmail,
 } from '../services/authService.js';
 
@@ -139,52 +138,8 @@ router.post(
   requireAuth,
   requireRole('admin'),
   asyncHandler(async (req, res) => {
-    const email = normalizeEmail(req.body?.email);
-    const role = String(req.body?.role || 'user').trim() || 'user';
-    const fullName = String(req.body?.full_name || '').trim();
-    if (!email) {
-      throw createHttpError(400, 'email is required', 'MISSING_EMAIL');
-    }
-
-    const inviteToken = generateOpaqueToken();
-    const inviteTokenExpires = tokenExpiry(config.auth.inviteTokenMinutes);
-    const now = nowIso();
-
-    let user = await User.findOne({ email }).select('+password_hash');
-    if (!user) {
-      const idPrefix = email.split('@')[0]?.replace(/[^a-zA-Z0-9_.-]/g, '') || 'user';
-      user = await User.create({
-        id: `invited_${idPrefix}_${uuidv4().slice(0, 8)}`,
-        tenantId: config.defaultTenantId,
-        full_name: fullName || email.split('@')[0] || 'Invited User',
-        email,
-        role,
-        status: 'pending',
-        invite_token: inviteToken,
-        invite_token_expires: inviteTokenExpires,
-        onboarding_completed: false,
-        created_date: now,
-        updated_date: now,
-      });
-    } else {
-      user.role = role || user.role;
-      if (fullName) user.full_name = fullName;
-      user.status = 'pending';
-      user.invite_token = inviteToken;
-      user.invite_token_expires = inviteTokenExpires;
-      user.reset_token = undefined;
-      user.reset_token_expires = undefined;
-      user.updated_date = now;
-      await user.save();
-    }
-
-    await sendInviteEmail(email, inviteToken);
-    res.status(201).json({
-      success: true,
-      message: 'Invite sent',
-      user: sanitizeUser(user),
-      ...(process.env.NODE_ENV !== 'production' ? { invite_token: inviteToken } : {}),
-    });
+    const invited = await inviteUser(req.body || {});
+    res.status(201).json(invited);
   })
 );
 
@@ -233,18 +188,27 @@ router.post(
     }
 
     const user = await User.findOne({ email });
+    let resetDelivery = null;
     if (user) {
       const resetToken = generateOpaqueToken();
       user.reset_token = resetToken;
       user.reset_token_expires = tokenExpiry(config.auth.resetTokenMinutes);
       user.updated_date = nowIso();
       await user.save();
-      await sendPasswordResetEmail(email, resetToken);
+      resetDelivery = await sendPasswordResetEmail(email, resetToken);
     }
 
     res.json({
       success: true,
       message: 'If the account exists, a reset email has been sent.',
+      ...(resetDelivery
+        ? {
+            deliveryStatus: {
+              messageQueued: Boolean(resetDelivery.messageQueued),
+              providerId: resetDelivery.providerId || null,
+            },
+          }
+        : {}),
       ...(process.env.NODE_ENV !== 'production' && user?.reset_token ? { reset_token: user.reset_token } : {}),
     });
   })

@@ -15,6 +15,14 @@ export async function getLeaderboardData(params) {
   return response?.data || response;
 }
 
+export async function getLeaderboardFilterOptions() {
+  if (useNodeBackend) {
+    return nodeRequest('/analytics/leaderboard-filters');
+  }
+  // Fallback for base44 mode when dedicated filter endpoint is unavailable.
+  return { sectors: [], departments: [] };
+}
+
 export async function analyzeTeamPerformance(params) {
   if (useNodeBackend) {
     return nodeRequest('/analytics/analyze-team-performance', {

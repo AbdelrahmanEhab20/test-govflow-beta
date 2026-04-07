@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { inviteUser } from "@/api/usersApi";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "react-hot-toast";
 import {
   Dialog,
   DialogContent,
@@ -33,17 +34,30 @@ export default function InviteTeamMemberDialog({ departments }) {
 
   const inviteMutation = useMutation({
     mutationFn: async (data) => {
-      await inviteUser(data.email, data.role);
-      // Update user with department and position
-      if (data.department || data.position) {
-        // This will be updated when the user registers
-      }
+      return inviteUser({
+        email: data.email,
+        role: data.role,
+        ...(data.department ? { department: data.department } : {}),
+        ...(data.position ? { position: data.position } : {}),
+      });
     },
-    onSuccess: () => {
+    onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
+      const isResend = Boolean(response?.isResend);
+      const queued = Boolean(response?.deliveryStatus?.messageQueued);
+      if (queued && isResend) {
+        toast.success('Invite resent successfully');
+      } else if (queued) {
+        toast.success('Invite queued and email sent');
+      } else {
+        toast.success('Invite saved');
+      }
       setFormData({ email: '', role: 'user', department: '', position: '' });
       setNewDepartment('');
       setOpen(false);
+    },
+    onError: (error) => {
+      toast.error(error?.message || 'Invite failed. Please retry.');
     },
   });
 

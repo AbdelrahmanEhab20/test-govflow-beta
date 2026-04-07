@@ -1,8 +1,7 @@
 import React, { useState, useMemo } from "react";
-import { listTeams } from "@/api/departmentsApi";
-import { getLeaderboardData } from "@/api/analyticsApi";
+import { getLeaderboardData, getLeaderboardFilterOptions } from "@/api/analyticsApi";
 import { useQuery } from "@tanstack/react-query";
-import { Trophy, Loader, RefreshCw } from "lucide-react";
+import { Trophy, Loader, RefreshCw, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import LeaderboardFilters from "@/components/leaderboard/LeaderboardFilters";
 import MembersLeaderboard from "@/components/leaderboard/MembersLeaderboard";
@@ -12,12 +11,13 @@ import SectorsLeaderboard from "@/components/leaderboard/SectorsLeaderboard";
 export default function Leaderboard() {
   const [filters, setFilters] = useState({ preset: "all", sector: "", department: "", startDate: "", endDate: "" });
 
-  const { data: teamMembers = [] } = useQuery({
-    queryKey: ['teamMembers'],
-    queryFn: () => listTeams(),
+  const { data: filterOptions = {} } = useQuery({
+    queryKey: ['leaderboardFilterOptions'],
+    queryFn: () => getLeaderboardFilterOptions(),
+    staleTime: 5 * 60 * 1000,
   });
 
-  const { data, isLoading, isFetching, refetch } = useQuery({
+  const { data, isLoading, isFetching, isError, error, refetch } = useQuery({
     queryKey: ['leaderboard', filters],
     queryFn: () => getLeaderboardData({
       startDate:  filters.startDate,
@@ -28,16 +28,14 @@ export default function Leaderboard() {
     staleTime: 60 * 1000,
   });
 
-  // Derive available sector/department options from team members
+  // Use canonical backend filter options to avoid mismatched values.
   const sectors = useMemo(() => {
-    const s = new Set(teamMembers.map(m => m.sector_name).filter(Boolean));
-    return [...s].sort();
-  }, [teamMembers]);
+    return Array.isArray(filterOptions?.sectors) ? filterOptions.sectors : [];
+  }, [filterOptions?.sectors]);
 
   const departments = useMemo(() => {
-    const d = new Set(teamMembers.map(m => m.department_name).filter(Boolean));
-    return [...d].sort();
-  }, [teamMembers]);
+    return Array.isArray(filterOptions?.departments) ? filterOptions.departments : [];
+  }, [filterOptions?.departments]);
 
   return (
     <div className="p-6 lg:p-8 max-w-7xl mx-auto space-y-8">
@@ -71,6 +69,24 @@ export default function Leaderboard() {
         <div className="flex flex-col items-center justify-center py-20 gap-3">
           <Loader className="w-8 h-8 animate-spin text-blue-600" />
           <p className="text-slate-500 dark:text-slate-400 text-sm">Calculating leaderboard data…</p>
+        </div>
+      ) : isError ? (
+        <div className="rounded-xl border border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-900/40 p-6">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5" />
+            <div className="space-y-3">
+              <div>
+                <p className="text-sm font-semibold text-red-800 dark:text-red-300">Failed to load leaderboard</p>
+                <p className="text-sm text-red-700 dark:text-red-300/90 mt-1">
+                  {error?.message || "Something went wrong while loading leaderboard data."}
+                </p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
+                <RefreshCw className={`w-4 h-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
+                Retry
+              </Button>
+            </div>
+          </div>
         </div>
       ) : (
         <div className="space-y-8">

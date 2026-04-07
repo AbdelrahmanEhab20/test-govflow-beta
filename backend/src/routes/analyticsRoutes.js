@@ -1,7 +1,11 @@
 import { Router } from 'express';
 import { asyncHandler } from '../middleware/errorHandler.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
-import { getLeaderboardData, analyzeTeamPerformance } from '../services/analyticsService.js';
+import {
+  getLeaderboardData,
+  getLeaderboardFilterOptions,
+  analyzeTeamPerformance,
+} from '../services/analyticsService.js';
 
 const router = Router();
 
@@ -12,6 +16,17 @@ router.post(
   requireRole('admin', 'department_admin', 'department_manager'),
   asyncHandler(async (req, res) => {
     const data = await getLeaderboardData(req.body || {});
+    res.json(data);
+  }),
+);
+
+// GET /analytics/leaderboard-filters
+router.get(
+  '/analytics/leaderboard-filters',
+  requireAuth,
+  requireRole('admin', 'department_admin', 'department_manager'),
+  asyncHandler(async (_req, res) => {
+    const data = await getLeaderboardFilterOptions();
     res.json(data);
   }),
 );

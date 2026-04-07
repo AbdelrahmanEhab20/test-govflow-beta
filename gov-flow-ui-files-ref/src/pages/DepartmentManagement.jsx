@@ -8,7 +8,6 @@ import { Search, Plus, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "../utils";
 import DepartmentForm from "../components/departments/DepartmentForm";
-import DepartmentList from "../components/departments/DepartmentList";
 import InviteTeamMemberDialog from "../components/team/InviteTeamMemberDialog";
 import ImportContactsDialog from "../components/team/ImportContactsDialog";
 import TeamMembersView from "../components/team/TeamMembersView";
@@ -43,8 +42,10 @@ export default function DepartmentManagement() {
     queryFn: () => listDepartments(),
   });
 
-  // Only allow admins
-  if (user && user.role !== 'admin') {
+  const hasTeamManagementAccess = ['admin', 'department_admin'].includes(user?.role);
+
+  // Allow admin and department_admin to match backend policy.
+  if (user && !hasTeamManagementAccess) {
     return (
       <div className="p-6 lg:p-8">
         <div className="text-center py-12">

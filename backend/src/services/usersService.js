@@ -2,7 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { User } from '../models/index.js';
 import { config } from '../config/index.js';
 import { createHttpError } from '../middleware/errorHandler.js';
-import { generateOpaqueToken, tokenExpiry, sendInviteEmail } from './authService.js';
+import { normalizeEmail, generateOpaqueToken, tokenExpiry, sendInviteEmail } from './authService.js';
 
 function withTenant(filter = {}) {
   return { tenantId: config.defaultTenantId, ...filter };
@@ -12,11 +12,23 @@ function nowIso() {
   return new Date().toISOString();
 }
 
+function sanitizeUser(user) {
+  if (!user) return null;
+  const base = typeof user.toObject === 'function' ? user.toObject() : { ...user };
+  delete base.password_hash;
+  delete base.invite_token;
+  delete base.invite_token_expires;
+  delete base.reset_token;
+  delete base.reset_token_expires;
+  return base;
+}
+
 export async function listUsers() {
-  return User.find(withTenant())
+  const users = await User.find(withTenant())
     .sort({ created_date: -1 })
     .lean()
     .exec();
+  return users.map((user) => sanitizeUser(user));
 }
 
 export async function updateUser(userId, data) {
@@ -30,7 +42,7 @@ export async function updateUser(userId, data) {
   if (!updated) {
     throw createHttpError(404, 'User not found', 'USER_NOT_FOUND');
   }
-  return updated;
+  return sanitizeUser(updated);
 }
 
 export async function updateUserRole(userId, newRole) {
@@ -40,44 +52,122 @@ export async function updateUserRole(userId, newRole) {
   return updateUser(userId, { role: newRole });
 }
 
-export async function inviteUser(email, role = 'user') {
+export async function inviteUser(invitePayload = {}) {
+  const email = normalizeEmail(invitePayload?.email);
+  const role = String(invitePayload?.role || 'user').trim() || 'user';
+  const fullName = String(invitePayload?.full_name || '').trim();
+  const department = String(invitePayload?.department || '').trim();
+  const position = String(invitePayload?.position || '').trim();
+
   if (!email) {
     throw createHttpError(400, 'email is required', 'MISSING_EMAIL');
   }
 
-  const normalizedEmail = String(email).trim().toLowerCase();
   const inviteToken = generateOpaqueToken();
   const inviteTokenExpires = tokenExpiry(config.auth.inviteTokenMinutes);
   const now = nowIso();
 
-  const existing = await User.findOne(withTenant({ email: normalizedEmail }));
+  const existing = await User.findOne(withTenant({ email }));
+  const isResend = Boolean(existing);
+
   if (existing) {
     existing.role = role || existing.role;
+    if (fullName) existing.full_name = fullName;
+    if (department) existing.department = department;
+    if (position) existing.position = position;
     existing.status = 'pending';
     existing.invite_token = inviteToken;
     existing.invite_token_expires = inviteTokenExpires;
+    existing.reset_token = undefined;
+    existing.reset_token_expires = undefined;
+    existing.invite_delivery_status = 'pending';
+    existing.invite_delivery_error = undefined;
+    existing.invite_delivery_provider_id = undefined;
     existing.updated_date = now;
     await existing.save();
-    await sendInviteEmail(normalizedEmail, inviteToken);
-    return existing.toObject();
+  } else {
+    const idPrefix = email.split('@')[0]?.replace(/[^a-zA-Z0-9_.-]/g, '') || 'user';
+    await User.create({
+      id: `invited_${idPrefix}_${uuidv4().slice(0, 8)}`,
+      tenantId: config.defaultTenantId,
+      full_name: fullName || email.split('@')[0] || 'Invited User',
+      email,
+      role,
+      status: 'pending',
+      invite_token: inviteToken,
+      invite_token_expires: inviteTokenExpires,
+      onboarding_completed: false,
+      ...(department ? { department } : {}),
+      ...(position ? { position } : {}),
+      invite_delivery_status: 'pending',
+      created_date: now,
+      updated_date: now,
+    });
   }
 
-  const idPrefix = normalizedEmail.split('@')[0]?.replace(/[^a-zA-Z0-9_.-]/g, '') || 'user';
-  const created = await User.create({
-    id: `invited_${idPrefix}_${uuidv4().slice(0, 8)}`,
-    tenantId: config.defaultTenantId,
-    full_name: normalizedEmail.split('@')[0] || 'Invited User',
-    email: normalizedEmail,
-    role,
-    status: 'pending',
-    invite_token: inviteToken,
-    invite_token_expires: inviteTokenExpires,
-    onboarding_completed: false,
-    created_date: now,
-    updated_date: now,
-  });
+  let deliveryStatus = { messageQueued: false, providerId: null, status: 'failed' };
+  try {
+    const delivery = await sendInviteEmail(email, inviteToken);
+    deliveryStatus = {
+      messageQueued: Boolean(delivery?.messageQueued),
+      providerId: delivery?.providerId || null,
+      status: delivery?.messageQueued ? 'queued' : 'not_sent',
+    };
+  } catch (error) {
+    deliveryStatus = {
+      messageQueued: false,
+      providerId: null,
+      status: 'failed',
+      error: error?.message || 'Invite email delivery failed',
+    };
+  }
 
-  await sendInviteEmail(normalizedEmail, inviteToken);
-  return created.toObject();
+  const deliveryUpdate = {
+    $set: {
+      invite_delivery_status: deliveryStatus.status,
+      updated_date: nowIso(),
+    },
+  };
+  if (deliveryStatus.providerId) {
+    deliveryUpdate.$set.invite_delivery_provider_id = deliveryStatus.providerId;
+  } else {
+    deliveryUpdate.$unset = { ...(deliveryUpdate.$unset || {}), invite_delivery_provider_id: '' };
+  }
+  if (deliveryStatus.error) {
+    deliveryUpdate.$set.invite_delivery_error = deliveryStatus.error;
+  } else {
+    deliveryUpdate.$unset = { ...(deliveryUpdate.$unset || {}), invite_delivery_error: '' };
+  }
+  if (deliveryStatus.messageQueued) {
+    deliveryUpdate.$set.invite_sent_at = nowIso();
+  } else {
+    deliveryUpdate.$unset = { ...(deliveryUpdate.$unset || {}), invite_sent_at: '' };
+  }
+
+  const saved = await User.findOneAndUpdate(withTenant({ email }), deliveryUpdate, { new: true });
+
+  if (!saved) {
+    throw createHttpError(500, 'Failed to load invited user record', 'INVITE_USER_NOT_FOUND');
+  }
+
+  if (deliveryStatus.status === 'failed') {
+    throw createHttpError(
+      502,
+      `Invite created but email delivery failed for ${email}. Please retry.`,
+      'INVITE_EMAIL_DELIVERY_FAILED',
+    );
+  }
+
+  return {
+    success: true,
+    user: sanitizeUser(saved),
+    isResend,
+    deliveryStatus: {
+      status: deliveryStatus.status,
+      messageQueued: deliveryStatus.messageQueued,
+      providerId: deliveryStatus.providerId || null,
+    },
+    ...(process.env.NODE_ENV !== 'production' ? { invite_token: inviteToken } : {}),
+  };
 }
 
