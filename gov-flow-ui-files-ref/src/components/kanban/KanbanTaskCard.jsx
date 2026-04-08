@@ -117,13 +117,16 @@ export default function KanbanTaskCard({ task, getUserName, isDragging, isDragga
       {/* Assignee and Drag Indicator */}
       <div className="flex items-center justify-between">
         {task.lead_user_id && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
             <Avatar className="w-6 h-6">
               <AvatarFallback className="text-xs bg-blue-500 text-white">
                 {getInitials(task.lead_user_name)}
               </AvatarFallback>
             </Avatar>
-            <span className="text-xs text-slate-600 dark:text-slate-400">
+            <span
+              className="text-xs text-slate-600 dark:text-slate-400 truncate block max-w-[120px]"
+              title={task.lead_user_name || ''}
+            >
               {task.lead_user_name}
             </span>
           </div>
