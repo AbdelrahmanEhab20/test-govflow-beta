@@ -5,7 +5,30 @@ function withTenant(filter = {}) {
   return { tenantId: config.defaultTenantId, ...filter };
 }
 
+function buildCanonicalDepartmentContext(departments = []) {
+  const canonicalByLower = new Map();
+  const sectorByDepartment = new Map();
+  for (const department of departments || []) {
+    const canonicalName = String(department?.name || '').trim();
+    if (!canonicalName) continue;
+    canonicalByLower.set(canonicalName.toLowerCase(), canonicalName);
+    sectorByDepartment.set(canonicalName, String(department?.sector || '').trim());
+  }
+  const fallbackDepartment =
+    canonicalByLower.get('development') ||
+    (canonicalByLower.size > 0 ? [...canonicalByLower.values()][0] : 'Development');
+  return { canonicalByLower, sectorByDepartment, fallbackDepartment };
+}
+
+function normalizeDepartmentName(rawDepartment, context) {
+  const normalized = String(rawDepartment || '').trim();
+  if (!normalized) return context.fallbackDepartment;
+  const canonicalName = context.canonicalByLower.get(normalized.toLowerCase());
+  return canonicalName || context.fallbackDepartment;
+}
+
 function computeLeaderboard({ initiatives, teamMembers, users, departments, startDate, endDate, sector, department }) {
+  const departmentContext = buildCanonicalDepartmentContext(departments);
   const memberInfoMap = {};
   for (const m of teamMembers) {
     if (m?.name) memberInfoMap[m.name] = m;
@@ -14,25 +37,20 @@ function computeLeaderboard({ initiatives, teamMembers, users, departments, star
   for (const u of users || []) {
     if (u?.id) usersById[u.id] = u;
   }
-  const departmentSectorMap = {};
-  for (const d of departments || []) {
-    if (d?.name) departmentSectorMap[d.name] = d.sector || '';
-  }
-
   const resolveMemberProfile = (taskOrMember = {}) => {
     const fromTeam = taskOrMember?.name ? memberInfoMap[taskOrMember.name] : null;
     const fromTaskLead = taskOrMember?.lead_user_name ? memberInfoMap[taskOrMember.lead_user_name] : null;
     const fromUser = taskOrMember?.lead_user_id ? usersById[taskOrMember.lead_user_id] : null;
     const source = fromTeam || fromTaskLead || {};
-    const departmentName =
+    const rawDepartment =
       source.department_name ||
       fromUser?.department ||
-      taskOrMember?.department ||
-      'Unknown';
+      taskOrMember?.department;
+    const departmentName = normalizeDepartmentName(rawDepartment, departmentContext);
     const sectorName =
       source.sector_name ||
-      departmentSectorMap[departmentName] ||
-      'Unknown';
+      departmentContext.sectorByDepartment.get(departmentName) ||
+      'General';
     return {
       job_title: source.job_title || fromUser?.position || '',
       department: departmentName,
@@ -226,37 +244,12 @@ export async function getLeaderboardData(params = {}) {
 }
 
 export async function getLeaderboardFilterOptions() {
-  const teamMembers = await TeamMember.find(withTenant()).lean().exec();
-  const users = await User.find(withTenant()).lean().exec();
   const departments = await Department.find(withTenant()).lean().exec();
-
-  const departmentSet = new Set();
-  const sectorSet = new Set();
-
-  for (const dept of departments) {
-    if (dept?.name) departmentSet.add(dept.name);
-    if (dept?.sector) sectorSet.add(dept.sector);
-  }
-
-  for (const member of teamMembers) {
-    if (member?.department_name) departmentSet.add(member.department_name);
-    if (member?.sector_name) sectorSet.add(member.sector_name);
-  }
-
-  const departmentToSector = new Map();
-  for (const dept of departments) {
-    if (dept?.name && dept?.sector) {
-      departmentToSector.set(dept.name, dept.sector);
-    }
-  }
-
-  for (const user of users) {
-    if (user?.department) {
-      departmentSet.add(user.department);
-      const inferredSector = departmentToSector.get(user.department);
-      if (inferredSector) sectorSet.add(inferredSector);
-    }
-  }
+  const departmentContext = buildCanonicalDepartmentContext(departments);
+  const departmentSet = new Set([...departmentContext.canonicalByLower.values()]);
+  const sectorSet = new Set(
+    [...departmentContext.sectorByDepartment.values()].filter((sector) => String(sector || '').trim()),
+  );
 
   return {
     departments: [...departmentSet].sort((a, b) => a.localeCompare(b)),

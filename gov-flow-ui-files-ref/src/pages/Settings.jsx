@@ -374,9 +374,9 @@ export default function Settings() {
                               variant="outline"
                               size="sm"
                               onClick={() => deleteMailboxMutation.mutate(mailbox.id)}
-                              disabled={deleteMailboxMutation.isPending || (user?.mailboxes || []).length <= 1}
+                              disabled={deleteMailboxMutation.isPending}
                               className="gap-2"
-                              title={(user?.mailboxes || []).length <= 1 ? "Keep at least one mailbox" : "Remove mailbox"}
+                              title="Remove mailbox"
                             >
                               <Trash2 className="w-4 h-4" />
                               Remove

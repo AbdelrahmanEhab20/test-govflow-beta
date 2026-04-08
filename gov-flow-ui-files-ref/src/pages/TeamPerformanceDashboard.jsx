@@ -2,8 +2,8 @@ import React, { useState, useMemo } from "react";
 import { getCurrentUser } from "@/api/authApi";
 import { listTasks } from "@/api/tasksApi";
 import { listUsers } from "@/api/usersApi";
-import { listDepartments, listTeams } from "@/api/departmentsApi";
-import { analyzeTeamPerformance } from "@/api/analyticsApi";
+import { listTeams } from "@/api/departmentsApi";
+import { analyzeTeamPerformance, getLeaderboardFilterOptions } from "@/api/analyticsApi";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,14 +51,14 @@ export default function TeamPerformanceDashboard() {
     queryFn: () => listUsers(),
   });
 
-  const { data: departments = [] } = useQuery({
-    queryKey: ['databaseDepartments'],
-    queryFn: () => listDepartments(),
-  });
-
   const { data: teamMembers = [] } = useQuery({
     queryKey: ['teamMembers'],
     queryFn: () => listTeams(),
+  });
+
+  const { data: leaderboardFilterOptions = { departments: [], sectors: [] } } = useQuery({
+    queryKey: ['leaderboardFilterOptions'],
+    queryFn: () => getLeaderboardFilterOptions(),
   });
 
   // Only allow admins
@@ -75,52 +75,80 @@ export default function TeamPerformanceDashboard() {
     );
   }
 
-  // Derive departments from team members
-  const derivedDepartments = Array.from(new Map(
-    teamMembers.map(member => [
-      member.department_name,
-      {
-        id: member.department_name,
-        name: member.department_name,
-        sector: member.sector_name,
+  const canonicalDepartments = leaderboardFilterOptions.departments || [];
+  const canonicalSectors = leaderboardFilterOptions.sectors || [];
+  const canonicalDepartmentByLower = useMemo(
+    () => new Map(canonicalDepartments.map((name) => [name.toLowerCase(), name])),
+    [canonicalDepartments],
+  );
+  const defaultDepartment = canonicalDepartmentByLower.get('development') || canonicalDepartments[0] || '';
+  const departmentToSector = useMemo(() => {
+    const map = new Map();
+    for (const member of teamMembers) {
+      const departmentName = canonicalDepartmentByLower.get(String(member?.department_name || '').toLowerCase());
+      if (departmentName && member?.sector_name) {
+        map.set(departmentName, member.sector_name);
+      }
+    }
+    return map;
+  }, [teamMembers, canonicalDepartmentByLower]);
+
+  const derivedDepartments = useMemo(
+    () =>
+      canonicalDepartments.map((name) => ({
+        id: name,
+        name,
+        sector: departmentToSector.get(name) || '',
         description: '',
-        manager_name: member.reporting_to || 'TBD',
-        member_count: teamMembers.filter(m => m.department_name === member.department_name).length,
+        manager_name: 'TBD',
+        member_count: users.filter((u) => {
+          const normalized = canonicalDepartmentByLower.get(String(u?.department || '').toLowerCase()) || defaultDepartment;
+          return normalized === name;
+        }).length,
         email: '',
         phone: '',
-        is_active: true
-      }
-    ])
-  ).values())
-    .filter(d => d.name);
-
-  // Derive sectors from team members
-  const derivedSectors = Array.from(new Set(
-    teamMembers.map(member => member.sector_name).filter(s => s)
-  )).sort();
+        is_active: true,
+      })),
+    [canonicalDepartments, departmentToSector, users, canonicalDepartmentByLower, defaultDepartment],
+  );
+  const derivedSectors = canonicalSectors;
 
   // Filter initiatives based on selected criteria
   const filteredInitiatives = useMemo(() => {
     let filtered = [...initiatives];
+    const usersById = new Map(users.map((u) => [u.id, u]));
+    const usersByName = new Map(users.map((u) => [u.full_name, u]));
+    const membersByName = new Map(teamMembers.map((m) => [m.name, m]));
+    const normalizeDepartment = (raw) => {
+      const canonical = canonicalDepartmentByLower.get(String(raw || '').toLowerCase());
+      return canonical || defaultDepartment;
+    };
+    const resolveParticipant = ({ id, name }) => {
+      const fromUser = (id && usersById.get(id)) || (name && usersByName.get(name));
+      const fromMember = name ? membersByName.get(name) : null;
+      const department = normalizeDepartment(fromUser?.department || fromMember?.department_name);
+      const sector = departmentToSector.get(department) || fromMember?.sector_name || '';
+      return { department, sector };
+    };
 
     // Filter by sector
     if (selectedSector) {
-      const sectorMembers = teamMembers.filter(m => m.sector_name === selectedSector);
-      const sectorMemberNames = sectorMembers.map(m => m.name);
-      filtered = filtered.filter(init =>
-        sectorMemberNames.includes(init.lead_user_name) ||
-        (init.support_user_names && init.support_user_names.some(name => sectorMemberNames.includes(name)))
-      );
+      filtered = filtered.filter((init) => {
+        const lead = resolveParticipant({ id: init.lead_user_id, name: init.lead_user_name });
+        if (lead.sector === selectedSector) return true;
+        if (!Array.isArray(init.support_user_names)) return false;
+        return init.support_user_names.some((name) => resolveParticipant({ name }).sector === selectedSector);
+      });
     }
 
-    // Filter by department (by manager or members)
+    // Filter by canonical department
     if (selectedDepartment) {
-      const deptMembers = teamMembers.filter(m => m.department_name === selectedDepartment);
-      const deptMemberNames = deptMembers.map(m => m.name);
-      filtered = filtered.filter(init =>
-        deptMemberNames.includes(init.lead_user_name) ||
-        (init.support_user_names && init.support_user_names.some(name => deptMemberNames.includes(name)))
-      );
+      filtered = filtered.filter((init) => {
+        const lead = resolveParticipant({ id: init.lead_user_id, name: init.lead_user_name });
+        if (lead.department === selectedDepartment) return true;
+        if (!Array.isArray(init.support_user_names)) return false;
+        return init.support_user_names.some((name) => resolveParticipant({ name }).department === selectedDepartment);
+      });
     }
 
     // Filter by search query
@@ -146,7 +174,19 @@ export default function TeamPerformanceDashboard() {
     }
 
     return filtered;
-  }, [initiatives, selectedDepartment, selectedSector, startDate, endDate, teamMembers, searchQuery]);
+  }, [
+    initiatives,
+    selectedDepartment,
+    selectedSector,
+    startDate,
+    endDate,
+    teamMembers,
+    searchQuery,
+    users,
+    canonicalDepartmentByLower,
+    defaultDepartment,
+    departmentToSector,
+  ]);
 
   const handleResetFilters = () => {
     setSelectedDepartment('');

@@ -13,6 +13,7 @@ const EmailMessageSchema = new mongoose.Schema(
 
     body_preview: { type: String },
     body_text: { type: String },
+    body_html: { type: String },
 
     received_at: { type: String }, // ISO datetime
 

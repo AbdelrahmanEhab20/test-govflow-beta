@@ -81,7 +81,7 @@ export default function DepartmentManagement() {
       name: user.full_name || user.email,
       email: user.email,
       job_title: user.position || '',
-      department_name: user.department || 'General',
+      department_name: user.department || 'Development',
       sector_name: '',
       mobile_number: user.phone || '',
       avatar_url: user.avatar_url || '',

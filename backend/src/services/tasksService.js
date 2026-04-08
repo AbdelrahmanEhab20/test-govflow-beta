@@ -220,13 +220,15 @@ export async function listComments(entityType, entityId) {
     .exec();
 }
 
-export async function createComment(data) {
+export async function createComment(data, actor = null) {
   const now = nowIso();
   const doc = await Comment.create({
     id: data.id || uuidv4(),
     tenantId: config.defaultTenantId,
     created_date: data.created_date || now,
     updated_date: data.updated_date || now,
+    user_id: data.user_id || actor?.id || '',
+    user_name: data.user_name || actor?.full_name || actor?.email || 'Unknown User',
     ...data,
   });
   return doc.toObject();

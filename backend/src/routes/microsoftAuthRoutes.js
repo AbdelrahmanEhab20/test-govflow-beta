@@ -77,6 +77,9 @@ function mapGraphMessageToEmail({ message, mailbox }) {
       ? String(message.categories[0]).toLowerCase()
       : null;
 
+  const contentType = String(message?.body?.contentType || '').toLowerCase();
+  const bodyContent = String(message?.body?.content || '');
+
   return {
     id: `ms_${message.id}`,
     tenantId: config.defaultTenantId,
@@ -90,7 +93,8 @@ function mapGraphMessageToEmail({ message, mailbox }) {
       .map((item) => item?.emailAddress?.address)
       .filter(Boolean),
     body_preview: message.bodyPreview || '',
-    body_text: message.bodyPreview || '',
+    body_text: contentType === 'text' ? bodyContent : (message.bodyPreview || ''),
+    body_html: contentType === 'html' ? bodyContent : '',
     received_at: message.receivedDateTime || now,
     mailbox: mailbox.email || '',
     is_read: Boolean(message.isRead),
@@ -289,7 +293,7 @@ router.post(
 
     const messages = await callGraph(
       mailbox.accessToken,
-      '/me/messages?$top=50&$select=id,subject,from,toRecipients,ccRecipients,bodyPreview,receivedDateTime,isRead,hasAttachments,categories'
+      '/me/messages?$top=50&$select=id,subject,from,toRecipients,ccRecipients,body,bodyPreview,receivedDateTime,isRead,hasAttachments,categories'
     );
     const items = Array.isArray(messages?.value) ? messages.value : [];
 
@@ -331,6 +335,7 @@ router.post(
             cc_emails: nextDoc.cc_emails,
             body_preview: nextDoc.body_preview,
             body_text: nextDoc.body_text,
+            body_html: nextDoc.body_html,
             received_at: nextDoc.received_at,
             mailbox: nextDoc.mailbox,
             is_read: nextDoc.is_read,

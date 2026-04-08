@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { User } from '../models/index.js';
+import { Department, User } from '../models/index.js';
 import { config } from '../config/index.js';
 import { createHttpError } from '../middleware/errorHandler.js';
 import { normalizeEmail, generateOpaqueToken, tokenExpiry, sendInviteEmail } from './authService.js';
@@ -53,6 +53,32 @@ function sanitizeUser(user) {
   return base;
 }
 
+async function loadCanonicalDepartmentMap() {
+  const departments = await Department.find(withTenant()).lean().exec();
+  const map = new Map();
+  for (const department of departments) {
+    const canonicalName = String(department?.name || '').trim();
+    if (!canonicalName) continue;
+    map.set(canonicalName.toLowerCase(), canonicalName);
+  }
+  return map;
+}
+
+function normalizeDepartmentFromInput(rawDepartment, canonicalDepartmentMap) {
+  if (rawDepartment === undefined) return undefined;
+  const normalized = String(rawDepartment || '').trim();
+  if (!normalized) return '';
+  const canonicalName = canonicalDepartmentMap.get(normalized.toLowerCase());
+  if (!canonicalName) {
+    throw createHttpError(
+      400,
+      `Invalid department "${normalized}". Please select an existing department.`,
+      'INVALID_DEPARTMENT',
+    );
+  }
+  return canonicalName;
+}
+
 export async function listUsers(actor = null) {
   const users = await User.find(withTenant())
     .sort({ created_date: -1 })
@@ -96,6 +122,10 @@ export async function updateUser(userId, data, actor = null) {
     if (Object.prototype.hasOwnProperty.call(data || {}, field)) {
       patch[field] = data[field];
     }
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'department')) {
+    const canonicalDepartmentMap = await loadCanonicalDepartmentMap();
+    patch.department = normalizeDepartmentFromInput(patch.department, canonicalDepartmentMap);
   }
 
   const now = nowIso();
@@ -156,7 +186,8 @@ export async function inviteUser(invitePayload = {}) {
   const email = normalizeEmail(invitePayload?.email);
   const role = String(invitePayload?.role || 'user').trim() || 'user';
   const fullName = String(invitePayload?.full_name || '').trim();
-  const department = String(invitePayload?.department || '').trim();
+  const canonicalDepartmentMap = await loadCanonicalDepartmentMap();
+  const department = normalizeDepartmentFromInput(invitePayload?.department, canonicalDepartmentMap) || '';
   const position = String(invitePayload?.position || '').trim();
 
   if (!email) {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { getCurrentUser, updateMe, uploadAvatar } from "@/api/authApi";
 import { listUsers, updateUser } from "@/api/usersApi";
+import { listDepartments } from "@/api/departmentsApi";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   Save, 
@@ -34,6 +35,10 @@ export default function Profile() {
     queryFn: () => listUsers(),
     enabled: user?.role === 'admin',
   });
+  const { data: departments = [] } = useQuery({
+    queryKey: ['databaseDepartments'],
+    queryFn: () => listDepartments(),
+  });
 
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [editingUser, setEditingUser] = useState(null);
@@ -41,7 +46,7 @@ export default function Profile() {
     full_name: '',
     full_name_ar: '',
     phone: '',
-    department: 'General',
+    department: '',
     position: ''
   });
   const [avatarLoading, setAvatarLoading] = useState(false);
@@ -58,7 +63,7 @@ export default function Profile() {
         full_name: targetUser.full_name || '',
         full_name_ar: targetUser.full_name_ar || '',
         phone: targetUser.phone || '',
-        department: targetUser.department || 'General',
+        department: targetUser.department || '',
         position: targetUser.position || ''
       });
     }
@@ -274,11 +279,21 @@ export default function Profile() {
                   <Building className="w-4 h-4" />
                   Department
                 </Label>
-                <Input
+                <Select
                   value={formData.department}
-                  onChange={(e) => setFormData(prev => ({ ...prev, department: e.target.value }))}
-                  className="mt-1.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-                />
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, department: value }))}
+                >
+                  <SelectTrigger className="mt-1.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white">
+                    <SelectValue placeholder="Select department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {departments.map((dept) => (
+                      <SelectItem key={dept.id || dept.name} value={dept.name}>
+                        {dept.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>

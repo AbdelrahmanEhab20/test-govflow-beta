@@ -29,7 +29,6 @@ export default function InviteTeamMemberDialog({ departments }) {
     department: '',
     position: ''
   });
-  const [newDepartment, setNewDepartment] = useState('');
   const queryClient = useQueryClient();
 
   const inviteMutation = useMutation({
@@ -53,7 +52,6 @@ export default function InviteTeamMemberDialog({ departments }) {
         toast.success('Invite saved');
       }
       setFormData({ email: '', role: 'user', department: '', position: '' });
-      setNewDepartment('');
       setOpen(false);
     },
     onError: (error) => {
@@ -70,7 +68,7 @@ export default function InviteTeamMemberDialog({ departments }) {
     inviteMutation.mutate({
       email: formData.email,
       role: formData.role,
-      department: newDepartment || formData.department,
+      department: formData.department,
       position: formData.position
     });
   };
@@ -125,11 +123,10 @@ export default function InviteTeamMemberDialog({ departments }) {
                 value={formData.department}
                 onValueChange={(value) => {
                   setFormData(prev => ({ ...prev, department: value }));
-                  setNewDepartment('');
                 }}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select department or create new" />
+                  <SelectValue placeholder="Select department" />
                 </SelectTrigger>
                 <SelectContent>
                   {departments.map((dept) => (
@@ -139,18 +136,6 @@ export default function InviteTeamMemberDialog({ departments }) {
                   ))}
                 </SelectContent>
               </Select>
-              <div className="flex gap-2">
-                <span className="text-xs text-slate-500">Or create new:</span>
-              </div>
-              <Input
-                type="text"
-                value={newDepartment}
-                onChange={(e) => {
-                  setNewDepartment(e.target.value);
-                  setFormData(prev => ({ ...prev, department: '' }));
-                }}
-                placeholder="New department name"
-              />
             </div>
           </div>
 

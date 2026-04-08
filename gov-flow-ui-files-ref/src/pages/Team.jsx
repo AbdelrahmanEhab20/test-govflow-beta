@@ -65,12 +65,13 @@ export default function Team() {
   });
 
   // Filter users by role scope.
-  const currentUserDepartment = currentUser?.department || 'General';
+  const currentUserDepartment = currentUser?.department || '';
+  const fallbackDepartment = currentUserDepartment || 'Development';
   const isManager = currentUser?.role === 'admin' || currentUser?.role === 'department_manager' || currentUser?.role === 'department_admin';
   
   const filteredUsers = users.filter(user => {
-    const userDept = user.department || 'General';
-    if (currentUser?.role !== 'admin' && userDept !== currentUserDepartment) return false;
+    const userDept = user.department || fallbackDepartment;
+    if (currentUser?.role !== 'admin' && currentUserDepartment && userDept !== currentUserDepartment) return false;
     
     // For managers, show direct reports (team members and dept managers if admin)
     if (isManager) {
@@ -96,7 +97,7 @@ export default function Team() {
 
   // Group users by department
   const usersByDepartment = filteredUsers.reduce((acc, user) => {
-    const dept = user.department || 'General';
+    const dept = user.department || fallbackDepartment;
     if (!acc[dept]) acc[dept] = [];
     acc[dept].push(user);
     return acc;
@@ -166,7 +167,7 @@ export default function Team() {
     if (!targetUser) return allowedRoles;
     if (currentUser?.role === 'department_admin') {
       if (targetUser.role === ROLES.ADMIN) return [];
-      if ((targetUser.department || 'General') !== currentUserDepartment) return [];
+      if ((targetUser.department || fallbackDepartment) !== currentUserDepartment) return [];
     }
     if (targetUser.id === currentUser?.id && currentUser?.role !== 'admin') {
       // Avoid accidental self-demotion for non-admin actors.
@@ -181,7 +182,7 @@ export default function Team() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">My Team</h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-1">{currentUserDepartment} members and workload</p>
+      <p className="text-slate-500 dark:text-slate-400 mt-1">{(currentUserDepartment || fallbackDepartment)} members and workload</p>
         </div>
         
         <div className="relative flex-1 sm:flex-none sm:w-64">
@@ -257,7 +258,7 @@ export default function Team() {
                     </div>
 
                     <div className="mt-4 space-y-2">
-                      <p className="text-sm text-slate-500 dark:text-slate-400">{user.department || 'General'}</p>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">{user.department || fallbackDepartment}</p>
                       
                       <div className="flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
                         <a href={`mailto:${user.email}`} className="flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">

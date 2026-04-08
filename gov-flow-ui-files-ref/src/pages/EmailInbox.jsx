@@ -60,7 +60,7 @@ export default function EmailInbox() {
   const urlParams = new URLSearchParams(window.location.search);
   const preSelectedId = urlParams.get('id');
 
-  const [activeView, setActiveView] = useState('all');
+  const [activeView, setActiveView] = useState('new');
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [selectedEmailId, setSelectedEmailId] = useState(preSelectedId || null);
@@ -90,7 +90,7 @@ export default function EmailInbox() {
     queryKey: ['emails', activeMailbox],
     queryFn: () => {
       const query = activeMailbox ? { mailbox: activeMailbox } : {};
-      return listEmails(query, '-received_at', 100);
+      return listEmails(query, '-received_at', 50);
     },
   });
 

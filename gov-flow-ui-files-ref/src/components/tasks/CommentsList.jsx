@@ -56,6 +56,18 @@ export default function CommentsList({
     return users.find(u => u.email === email) || null;
   };
 
+  const getCommentAuthor = (comment) => {
+    if (comment?.user_id) {
+      const byId = users.find((u) => u.id === comment.user_id);
+      if (byId) return byId;
+    }
+    if (comment?.created_by) {
+      const byEmail = getUserByEmail(comment.created_by);
+      if (byEmail) return byEmail;
+    }
+    return null;
+  };
+
   // Separate comments and activity
   const regularComments = comments.filter(c => !c.is_system);
   const activityLog = comments.filter(c => c.is_system);
@@ -64,7 +76,7 @@ export default function CommentsList({
     <div className="space-y-6">
       {/* Add comment */}
       <div className="space-y-3">
-        <h3 className="font-semibold text-slate-900">Comments</h3>
+        <h3 className="font-semibold text-slate-900 dark:text-white">Comments</h3>
         <div className="flex gap-3">
           <UserAvatar user={currentUser} size="sm" showTooltip={false} />
           <div className="flex-1">
@@ -97,20 +109,20 @@ export default function CommentsList({
       {regularComments.length > 0 && (
         <div className="space-y-4">
           {regularComments.map((comment) => {
-            const author = getUserByEmail(comment.created_by);
+            const author = getCommentAuthor(comment);
             return (
               <div key={comment.id} className="flex gap-3">
                 <UserAvatar user={author} size="sm" showTooltip={false} />
-                <div className="flex-1 bg-slate-50 rounded-lg p-3">
+                <div className="flex-1 bg-slate-50 dark:bg-slate-800 rounded-lg p-3">
                   <div className="flex items-center justify-between">
-                    <span className="font-medium text-slate-900 text-sm">
-                      {author?.full_name || comment.created_by}
+                    <span className="font-medium text-slate-900 dark:text-slate-100 text-sm">
+                      {author?.full_name || comment.user_name || comment.created_by || 'Unknown user'}
                     </span>
-                    <span className="text-xs text-slate-500">
-                      {formatDistanceToNow(new Date(comment.created_date), { addSuffix: true })}
+                    <span className="text-xs text-slate-500 dark:text-slate-400">
+                      {formatDistanceToNow(new Date(comment.created_date || comment.createdAt), { addSuffix: true })}
                     </span>
                   </div>
-                  <p className="text-sm text-slate-700 mt-1 whitespace-pre-wrap">
+                  <p className="text-sm text-slate-700 dark:text-slate-200 mt-1 whitespace-pre-wrap">
                     {comment.comment_text}
                   </p>
                   {comment.attachments?.length > 0 && (
@@ -137,7 +149,7 @@ export default function CommentsList({
       )}
 
       {regularComments.length === 0 && (
-        <p className="text-sm text-slate-500 text-center py-4">
+        <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">
           No comments yet. Be the first to comment.
         </p>
       )}
@@ -145,27 +157,27 @@ export default function CommentsList({
       {/* Activity log */}
       {activityLog.length > 0 && (
         <div className="border-t border-slate-200 pt-6">
-          <h3 className="font-semibold text-slate-900 mb-4">Activity Log</h3>
+          <h3 className="font-semibold text-slate-900 dark:text-white mb-4">Activity Log</h3>
           <div className="space-y-3">
             {activityLog.map((activity) => {
-              const author = getUserByEmail(activity.created_by);
+              const author = getCommentAuthor(activity);
               return (
                 <div key={activity.id} className="flex items-start gap-3 text-sm">
                   <span className="text-lg">{ACTIVITY_ICONS[activity.activity_type]}</span>
                   <div className="flex-1">
-                    <p className="text-slate-700">
+                    <p className="text-slate-700 dark:text-slate-200">
                       <span className="font-medium">{author?.full_name || activity.created_by}</span>
                       {' '}
                       {activity.comment_text}
                       {activity.old_value && activity.new_value && (
-                        <span className="text-slate-500">
+                        <span className="text-slate-500 dark:text-slate-400">
                           {' '}from <Badge variant="outline" className="mx-1">{activity.old_value}</Badge>
                           to <Badge variant="outline" className="mx-1">{activity.new_value}</Badge>
                         </span>
                       )}
                     </p>
                     <span className="text-xs text-slate-400">
-                      {format(new Date(activity.created_date), 'MMM d, yyyy h:mm a')}
+                      {format(new Date(activity.created_date || activity.createdAt), 'MMM d, yyyy h:mm a')}
                     </span>
                   </div>
                 </div>

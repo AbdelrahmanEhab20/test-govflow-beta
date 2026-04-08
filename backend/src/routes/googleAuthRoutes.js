@@ -63,6 +63,38 @@ function collectGmailAttachments(payload) {
   return out;
 }
 
+function decodeBase64Url(value) {
+  if (!value) return '';
+  const normalized = String(value).replace(/-/g, '+').replace(/_/g, '/');
+  const padLength = normalized.length % 4;
+  const padded = normalized + (padLength ? '='.repeat(4 - padLength) : '');
+  try {
+    return Buffer.from(padded, 'base64').toString('utf8');
+  } catch {
+    return '';
+  }
+}
+
+function extractBodyParts(payload) {
+  let html = '';
+  let text = '';
+  function walk(part) {
+    if (!part) return;
+    const mimeType = String(part.mimeType || '').toLowerCase();
+    const data = part?.body?.data ? decodeBase64Url(part.body.data) : '';
+    if (data && mimeType === 'text/html' && !html) {
+      html = data;
+    } else if (data && mimeType === 'text/plain' && !text) {
+      text = data;
+    }
+    if (Array.isArray(part.parts)) {
+      part.parts.forEach(walk);
+    }
+  }
+  walk(payload);
+  return { html, text };
+}
+
 function mapGoogleMessageToEmail({ message, mailbox }) {
   const headers = message?.payload?.headers || [];
   const fromHeader = getHeaderValue(headers, 'From');
@@ -81,6 +113,8 @@ function mapGoogleMessageToEmail({ message, mailbox }) {
           message.payload.parts.some((part) => Boolean(part?.filename))),
     );
 
+  const extractedBody = extractBodyParts(message?.payload);
+
   return {
     id: `gm_${message.id}`,
     tenantId: config.defaultTenantId,
@@ -90,7 +124,8 @@ function mapGoogleMessageToEmail({ message, mailbox }) {
     to_emails: parseEmailAddresses(getHeaderValue(headers, 'To')),
     cc_emails: parseEmailAddresses(getHeaderValue(headers, 'Cc')),
     body_preview: message.snippet || '',
-    body_text: message.snippet || '',
+    body_text: extractedBody.text || message.snippet || '',
+    body_html: extractedBody.html || '',
     received_at: message.internalDate
       ? new Date(Number(message.internalDate)).toISOString()
       : (dateHeader ? new Date(dateHeader).toISOString() : new Date().toISOString()),
@@ -310,6 +345,7 @@ router.post(
             cc_emails: nextDoc.cc_emails,
             body_preview: nextDoc.body_preview,
             body_text: nextDoc.body_text,
+            body_html: nextDoc.body_html,
             received_at: nextDoc.received_at,
             mailbox: nextDoc.mailbox,
             is_read: nextDoc.is_read,

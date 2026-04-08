@@ -134,7 +134,7 @@ router.post(
   '/comments',
   requireAuth,
   asyncHandler(async (req, res) => {
-    const created = await createComment(req.body || {});
+    const created = await createComment(req.body || {}, req.user);
     res.status(201).json(created);
   }),
 );

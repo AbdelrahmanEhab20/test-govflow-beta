@@ -44,9 +44,12 @@ export default function MailboxSelector({ user, activeMailbox, onMailboxChange }
       await updateMe({ mailboxes: updatedMailboxes });
       return mailboxId;
     },
-    onSuccess: () => {
+    onSuccess: (removedMailboxId) => {
       queryClient.invalidateQueries({ queryKey: ['currentUser'] });
       queryClient.invalidateQueries({ queryKey: ['emails'] });
+      const updated = mailboxes.filter((m) => m.id !== removedMailboxId);
+      const nextActive = updated.find((m) => m.isActive) || updated[0] || null;
+      onMailboxChange?.(nextActive?.email || null);
     },
   });
 
@@ -105,7 +108,7 @@ export default function MailboxSelector({ user, activeMailbox, onMailboxChange }
                     </div>
                     {mailbox.isActive && <Check className="w-4 h-4 text-green-600 flex-shrink-0" />}
                   </DropdownMenuItem>
-                  {mailboxes.length > 1 && (
+                  {mailboxes.length >= 1 && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();

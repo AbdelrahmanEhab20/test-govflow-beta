@@ -31,6 +31,7 @@ import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { listWorkflowStages } from '@/api/workflowApi';
 import { updateTask, deleteTask } from '@/api/tasksApi';
 import { ROLES } from '@/components/shared/rbac';
+import { toast } from 'react-hot-toast';
 
 export default function TaskListForBacklog({ tasks, getUserName, canDragTask, currentUser }) {
   const queryClient = useQueryClient();
@@ -64,6 +65,9 @@ export default function TaskListForBacklog({ tasks, getUserName, canDragTask, cu
   });
 
   const isAdmin = currentUser?.role === ROLES.ADMIN || currentUser?.role === ROLES.DEPARTMENT_ADMIN;
+  const isHigherRole = [ROLES.ADMIN, ROLES.DEPARTMENT_ADMIN, ROLES.DEPARTMENT_MANAGER, ROLES.EDITOR].includes(currentUser?.role);
+  const canProgressTask = (task) => isHigherRole || ((currentUser?.role === ROLES.TEAM_MEMBER || currentUser?.role === ROLES.USER) && task.lead_user_id === currentUser?.id);
+  const canCompleteTask = isHigherRole;
 
   const handleViewDetails = (taskId) => {
     navigate(createPageUrl(`TaskDetail?id=${taskId}`));
@@ -74,6 +78,10 @@ export default function TaskListForBacklog({ tasks, getUserName, canDragTask, cu
   };
 
   const handleMarkComplete = (task) => {
+    if (!canCompleteTask) {
+      toast.error('Only managers/admins can complete tasks.');
+      return;
+    }
     const completedStage =
       workflowStages.find((s) => s.name === 'Completed') ||
       workflowStages.find((s) => s.name === 'Done');
@@ -104,6 +112,15 @@ export default function TaskListForBacklog({ tasks, getUserName, canDragTask, cu
     let nextStatus = task?.status || 'not_started';
     if (stage?.name && statusByStageName[stage.name]) {
       nextStatus = statusByStageName[stage.name];
+    }
+
+    if (!canProgressTask(task)) {
+      toast.error('You can only move your assigned tasks.');
+      return;
+    }
+    if (!canCompleteTask && ['completed', 'approved'].includes(String(stage?.name || '').toLowerCase())) {
+      toast.error('Only managers/admins can move tasks to completed.');
+      return;
     }
 
     updateTaskMutation.mutate({
@@ -245,7 +262,7 @@ export default function TaskListForBacklog({ tasks, getUserName, canDragTask, cu
                                 Edit Task
                               </DropdownMenuItem>
                             )}
-                            <DropdownMenuItem onClick={() => handleMarkComplete(task)}>
+                            <DropdownMenuItem onClick={() => handleMarkComplete(task)} disabled={!canCompleteTask}>
                               <CheckCircle className="w-4 h-4 mr-2" />
                               Mark Complete
                             </DropdownMenuItem>
@@ -259,6 +276,10 @@ export default function TaskListForBacklog({ tasks, getUserName, canDragTask, cu
                                   <DropdownMenuItem
                                     key={stage.id}
                                     onClick={() => handleMoveTo(task.id, stage.id)}
+                                    disabled={
+                                      !canProgressTask(task) ||
+                                      (!canCompleteTask && ['completed', 'approved'].includes(String(stage.name || '').toLowerCase()))
+                                    }
                                   >
                                     {stage.name}
                                   </DropdownMenuItem>
@@ -274,6 +295,7 @@ export default function TaskListForBacklog({ tasks, getUserName, canDragTask, cu
                             <DropdownMenuItem 
                               className="text-red-600 dark:text-red-400"
                               onClick={() => setDeleteTaskId(task.id)}
+                              disabled={!isHigherRole}
                             >
                               <Trash2 className="w-4 h-4 mr-2" />
                               Delete

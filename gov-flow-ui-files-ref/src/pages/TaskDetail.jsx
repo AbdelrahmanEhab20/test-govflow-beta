@@ -43,6 +43,7 @@ import ProgressBar from "../components/shared/ProgressBar";
 import UserAvatar from "../components/shared/UserAvatar";
 import SubtaskList from "../components/tasks/SubtaskList";
 import CommentsList from "../components/tasks/CommentsList";
+import { ROLES } from "@/components/shared/rbac";
 
 function formatAttachmentSize(bytes) {
   const n = Number(bytes);
@@ -102,6 +103,9 @@ export default function TaskDetail() {
 
   const leadUser = users.find((u) => u.id === task?.lead_user_id);
   const email = linkedEmail ?? null;
+  const isHigherRole = [ROLES.ADMIN, ROLES.DEPARTMENT_ADMIN, ROLES.DEPARTMENT_MANAGER, ROLES.EDITOR].includes(currentUser?.role);
+  const canEditTask = isHigherRole || task?.lead_user_id === currentUser?.id;
+  const canDeleteTask = isHigherRole;
 
   if (isLoading) {
     return (
@@ -150,37 +154,40 @@ export default function TaskDetail() {
           </div>
 
           <div className="flex items-center gap-2">
-            <Link to={createPageUrl(`TaskForm?id=${taskId}`)}>
-              <Button variant="outline">
-                <Pencil className="w-4 h-4 mr-2" />
-                Edit
-              </Button>
-            </Link>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline" className="text-red-600 hover:text-red-700">
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete
+            {canEditTask && (
+              <Link to={createPageUrl(`TaskForm?id=${taskId}`)}>
+                <Button variant="outline">
+                  <Pencil className="w-4 h-4 mr-2" />
+                  Edit
                 </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Task</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Are you sure you want to delete this task? This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={() => deleteMutation.mutate()}
-                    className="bg-red-600 hover:bg-red-700">
-
+              </Link>
+            )}
+            {canDeleteTask && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" className="text-red-600 hover:text-red-700">
+                    <Trash2 className="w-4 h-4 mr-2" />
                     Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Task</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete this task? This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => deleteMutation.mutate()}
+                      className="bg-red-600 hover:bg-red-700">
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
           </div>
         </div>
 
