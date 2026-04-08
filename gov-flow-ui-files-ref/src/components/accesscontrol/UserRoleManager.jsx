@@ -1,12 +1,13 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { listUsers, updateUser } from "@/api/usersApi";
+import { listUsers, updateUserRole } from "@/api/usersApi";
 import { ROLES } from "@/components/shared/rbac";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Search, Shield } from "lucide-react";
+import { toast } from "react-hot-toast";
 
 const ROLE_LABELS = {
   admin: "System Admin",
@@ -38,8 +39,15 @@ export default function UserRoleManager() {
   });
 
   const updateRoleMutation = useMutation({
-    mutationFn: ({ userId, role }) => updateUser(userId, { role }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["all-users"] }),
+    mutationFn: ({ userId, role }) => updateUserRole(userId, role),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["all-users"] });
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      toast.success("User role updated successfully");
+    },
+    onError: (error) => {
+      toast.error(error?.message || "Failed to update user role");
+    },
   });
 
   const filtered = users.filter(u =>
