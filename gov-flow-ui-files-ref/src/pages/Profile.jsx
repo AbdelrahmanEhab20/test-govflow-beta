@@ -136,6 +136,21 @@ export default function Profile() {
     return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
   };
 
+  const resolveAvatarUrl = (avatarUrl) => {
+    if (!avatarUrl) return "";
+    if (/^https?:\/\//i.test(avatarUrl)) return avatarUrl;
+    if (avatarUrl.startsWith('/')) {
+      const apiBase = import.meta.env.VITE_API_BASE_URL;
+      if (!apiBase) return avatarUrl;
+      try {
+        return new URL(avatarUrl, apiBase).toString();
+      } catch {
+        return avatarUrl;
+      }
+    }
+    return avatarUrl;
+  };
+
   if (isLoading) {
     return (
       <div className="p-6 lg:p-8 flex items-center justify-center min-h-[400px]">
@@ -180,7 +195,7 @@ export default function Profile() {
           <div className="flex flex-col md:flex-row md:items-end gap-6">
             <div className="relative">
               <Avatar className="w-32 h-32 border-4 border-white dark:border-slate-900 shadow-lg">
-                <AvatarImage src={editingUser?.avatar_url} />
+                <AvatarImage src={resolveAvatarUrl(editingUser?.avatar_url)} />
                 <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-500 text-white text-4xl font-bold">
                   {getInitials(editingUser?.full_name)}
                 </AvatarFallback>

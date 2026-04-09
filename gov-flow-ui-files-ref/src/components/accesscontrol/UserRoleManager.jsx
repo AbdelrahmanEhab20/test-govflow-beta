@@ -76,27 +76,30 @@ export default function UserRoleManager() {
           ))}
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-3">
           {filtered.map(user => (
-            <div key={user.id} className="flex items-center gap-4 p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg">
+            <div
+              key={user.id}
+              className="flex items-center gap-4 p-4 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700 rounded-xl shadow-sm hover:shadow-md transition-all"
+            >
               <Avatar className="w-10 h-10 shrink-0">
                 <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-500 text-white text-sm">
                   {getInitials(user.full_name)}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-slate-900 dark:text-white truncate">{user.full_name || "—"}</p>
-                <p className="text-sm text-slate-500 dark:text-slate-400 truncate">{user.email}</p>
+                <p className="font-semibold text-slate-900 dark:text-white truncate">{user.full_name || "—"}</p>
+                <p className="text-sm text-slate-600 dark:text-slate-300 truncate">{user.email}</p>
               </div>
-              <div className="flex items-center gap-3 shrink-0">
-                <Badge className={`text-xs border ${ROLE_COLORS[user.role] || ROLE_COLORS.user}`}>
+              <div className="flex items-center gap-2 shrink-0">
+                <Badge className={`text-xs border font-medium ${ROLE_COLORS[user.role] || ROLE_COLORS.user}`}>
                   {ROLE_LABELS[user.role] || user.role}
                 </Badge>
                 <Select
                   value={user.role || "user"}
                   onValueChange={role => updateRoleMutation.mutate({ userId: user.id, role })}
                 >
-                  <SelectTrigger className="w-44 h-8 text-sm">
+                  <SelectTrigger className="w-48 h-9 text-sm bg-white dark:bg-slate-800">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

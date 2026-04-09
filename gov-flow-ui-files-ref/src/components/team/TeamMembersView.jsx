@@ -24,10 +24,13 @@ export default function TeamMembersView({ members }) {
             <LayoutList className="w-4 h-4" />
           </Button>
         </div>
-        <div className="space-y-2">
+        <div className="space-y-3">
           {members.map((member) => (
-            <Card key={member.id} className="p-4 flex items-center gap-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800">
-              <Avatar className="w-10 h-10">
+            <Card
+              key={member.id}
+              className="p-4 flex items-center gap-4 border border-slate-200/80 dark:border-slate-700 rounded-xl shadow-sm hover:shadow-md transition-all"
+            >
+              <Avatar className="w-11 h-11">
                 <AvatarImage src={member.avatar_url} />
                 <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-500 text-white">
                   {getInitials(member.name)}
@@ -35,11 +38,11 @@ export default function TeamMembersView({ members }) {
               </Avatar>
               <div className="flex-1">
                 <h3 className="font-semibold text-slate-900 dark:text-white">{member.name}</h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400">{member.job_title}</p>
+                <p className="text-sm text-slate-600 dark:text-slate-300">{member.job_title || "No position set"}</p>
               </div>
               <div className="flex flex-col items-end gap-1">
-                <Badge variant="secondary">{member.department_name}</Badge>
-                <p className="text-xs text-slate-500 dark:text-slate-400">{member.email}</p>
+                <Badge variant="secondary" className="font-medium">{member.department_name || "Unassigned"}</Badge>
+                <p className="text-xs text-slate-600 dark:text-slate-300">{member.email || "No email"}</p>
               </div>
             </Card>
           ))}
@@ -58,11 +61,14 @@ export default function TeamMembersView({ members }) {
           <LayoutList className="w-4 h-4" />
         </Button>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {members.map((member) => (
-          <Card key={member.id} className="p-4 flex flex-col gap-3 hover:shadow-lg transition-shadow cursor-pointer">
+          <Card
+            key={member.id}
+            className="p-5 flex flex-col gap-4 border border-slate-200/80 dark:border-slate-700 rounded-xl shadow-sm hover:shadow-md transition-all"
+          >
             <div className="flex items-start gap-3">
-              <Avatar className="w-12 h-12">
+              <Avatar className="w-12 h-12 ring-2 ring-slate-100 dark:ring-slate-700">
                 <AvatarImage src={member.avatar_url} />
                 <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-500 text-white">
                   {getInitials(member.name)}
@@ -70,13 +76,13 @@ export default function TeamMembersView({ members }) {
               </Avatar>
               <div className="flex-1">
                 <h3 className="font-semibold text-slate-900 dark:text-white">{member.name}</h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400">{member.job_title}</p>
+                <p className="text-sm text-slate-600 dark:text-slate-300">{member.job_title || "No position set"}</p>
               </div>
             </div>
-            <div className="space-y-2">
-              <Badge variant="secondary" className="block w-fit">{member.department_name}</Badge>
-              <p className="text-xs text-slate-500 dark:text-slate-400">{member.email}</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">{member.mobile_number}</p>
+            <div className="space-y-2.5 pt-1 border-t border-slate-100 dark:border-slate-700">
+              <Badge variant="secondary" className="block w-fit font-medium">{member.department_name || "Unassigned"}</Badge>
+              <p className="text-xs text-slate-600 dark:text-slate-300 truncate">{member.email || "No email"}</p>
+              <p className="text-xs text-slate-600 dark:text-slate-300">{member.mobile_number || "No phone"}</p>
             </div>
           </Card>
         ))}

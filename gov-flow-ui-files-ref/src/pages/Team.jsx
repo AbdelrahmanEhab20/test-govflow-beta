@@ -214,7 +214,7 @@ export default function Team() {
               const stats = getUserStats(user.id);
               
               return (
-                <Card key={user.id} className="overflow-hidden border-0 shadow-lg dark:shadow-xl dark:bg-slate-900 dark:border-slate-700">
+                <Card key={user.id} className="overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-all dark:bg-slate-900">
                   <div className="h-20 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600" />
                   <CardContent className="pt-0 -mt-10 pb-6">
                     <div className="flex items-end gap-4">
@@ -258,9 +258,9 @@ export default function Team() {
                     </div>
 
                     <div className="mt-4 space-y-2">
-                      <p className="text-sm text-slate-500 dark:text-slate-400">{user.department || fallbackDepartment}</p>
+                      <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{user.department || fallbackDepartment}</p>
                       
-                      <div className="flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
+                      <div className="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-300">
                         <a href={`mailto:${user.email}`} className="flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                           <Mail className="w-4 h-4" />
                           <span className="truncate">{user.email}</span>

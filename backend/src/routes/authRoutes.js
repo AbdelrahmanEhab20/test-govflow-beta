@@ -299,10 +299,11 @@ router.post(
 
     const fileName = path.basename(req.file.path);
     const publicPath = `/uploads/${fileName}`;
+    const publicUrl = `${req.protocol}://${req.get('host')}${publicPath}`;
 
     const user = await User.findOneAndUpdate(
       { id: req.user.id },
-      { $set: { avatar_url: publicPath } },
+      { $set: { avatar_url: publicUrl, updated_date: nowIso() } },
       { new: true }
     ).lean();
 
