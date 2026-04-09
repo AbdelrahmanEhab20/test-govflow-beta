@@ -2,7 +2,8 @@
 import { useState, useEffect } from "react";
 
 const TOAST_LIMIT = 20;
-const TOAST_REMOVE_DELAY = 1000000;
+const TOAST_REMOVE_DELAY = 220;
+const TOAST_DURATION = 4000;
 
 const actionTypes = {
   ADD_TOAST: "ADD_TOAST",
@@ -19,6 +20,7 @@ function genId() {
 }
 
 const toastTimeouts = new Map();
+const toastDurationTimeouts = new Map();
 
 const addToRemoveQueue = (toastId) => {
   if (toastTimeouts.has(toastId)) {
@@ -44,6 +46,14 @@ const _clearFromRemoveQueue = (toastId) => {
   }
 };
 
+const clearDurationTimer = (toastId) => {
+  const timeout = toastDurationTimeouts.get(toastId);
+  if (timeout) {
+    clearTimeout(timeout);
+    toastDurationTimeouts.delete(toastId);
+  }
+};
+
 export const reducer = (state, action) => {
   switch (action.type) {
     case actionTypes.ADD_TOAST:
@@ -66,9 +76,11 @@ export const reducer = (state, action) => {
       // ! Side effects ! - This could be extracted into a dismissToast() action,
       // but I'll keep it here for simplicity
       if (toastId) {
+        clearDurationTimer(toastId);
         addToRemoveQueue(toastId);
       } else {
         state.toasts.forEach((toast) => {
+          clearDurationTimer(toast.id);
           addToRemoveQueue(toast.id);
         });
       }
@@ -87,11 +99,17 @@ export const reducer = (state, action) => {
     }
     case actionTypes.REMOVE_TOAST:
       if (action.toastId === undefined) {
+        state.toasts.forEach((toast) => {
+          _clearFromRemoveQueue(toast.id);
+          clearDurationTimer(toast.id);
+        });
         return {
           ...state,
           toasts: [],
         };
       }
+      _clearFromRemoveQueue(action.toastId);
+      clearDurationTimer(action.toastId);
       return {
         ...state,
         toasts: state.toasts.filter((t) => t.id !== action.toastId),
@@ -133,6 +151,15 @@ function toast({ ...props }) {
       },
     },
   });
+
+  const duration = typeof props.duration === "number" ? props.duration : TOAST_DURATION;
+  if (duration > 0) {
+    clearDurationTimer(id);
+    const timeout = setTimeout(() => {
+      dismiss();
+    }, duration);
+    toastDurationTimeouts.set(id, timeout);
+  }
 
   return {
     id,
