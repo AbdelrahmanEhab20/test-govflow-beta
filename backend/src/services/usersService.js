@@ -91,6 +91,9 @@ export async function listUsers(actor = null) {
     if (isDepartmentAdmin(actor.role) || isDepartmentManager(actor.role)) {
       return actor.department && user.department && actor.department === user.department;
     }
+    if (actor.role === 'team_member' || actor.role === 'user') {
+      return actor.department && user.department && actor.department === user.department;
+    }
     return false;
   });
   return visibleUsers.map((user) => sanitizeUser(user));

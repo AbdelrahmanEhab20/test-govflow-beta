@@ -104,7 +104,9 @@ export default function TaskDetail() {
   const leadUser = users.find((u) => u.id === task?.lead_user_id);
   const email = linkedEmail ?? null;
   const isHigherRole = [ROLES.ADMIN, ROLES.DEPARTMENT_ADMIN, ROLES.DEPARTMENT_MANAGER, ROLES.EDITOR].includes(currentUser?.role);
-  const canEditTask = isHigherRole || task?.lead_user_id === currentUser?.id;
+  const isOwnTask = task?.lead_user_id === currentUser?.id;
+  // Keep task content edits to manager/editor roles only.
+  const canEditTask = isHigherRole || (currentUser?.role === ROLES.TEAM_MEMBER && isOwnTask);
   const canDeleteTask = isHigherRole;
 
   if (isLoading) {

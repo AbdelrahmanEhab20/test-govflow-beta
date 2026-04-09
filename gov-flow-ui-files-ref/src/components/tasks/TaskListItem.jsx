@@ -67,6 +67,8 @@ export default function TaskListItem({
   const isOwnTask = task.lead_user_id === currentUser?.id;
   const canProgressTask = isHigherRole || ((currentUser?.role === ROLES.TEAM_MEMBER || currentUser?.role === ROLES.USER) && isOwnTask);
   const canCompleteTask = isHigherRole;
+  const canEditTask = isHigherRole || (currentUser?.role === ROLES.TEAM_MEMBER && isOwnTask);
+  const canDeleteTask = isHigherRole;
 
   const handleStatusChange = (newStatus) => {
     const updates = { status: newStatus };
@@ -217,12 +219,14 @@ export default function TaskListItem({
               View Details
             </Link>
           </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link to={createPageUrl(`TaskForm?id=${task.id}`)}>
-              <Pencil className="w-4 h-4 mr-2" />
-              Edit Task
-            </Link>
-          </DropdownMenuItem>
+          {canEditTask && (
+            <DropdownMenuItem asChild>
+              <Link to={createPageUrl(`TaskForm?id=${task.id}`)}>
+                <Pencil className="w-4 h-4 mr-2" />
+                Edit Task
+              </Link>
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem onClick={() => handleStatusChange('completed')} disabled={!canCompleteTask}>
             <CheckCircle2 className="w-4 h-4 mr-2" />
             Mark Complete
@@ -253,14 +257,18 @@ export default function TaskListItem({
               )}
             </DropdownMenuSubContent>
           </DropdownMenuSub>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            onClick={() => onDelete(task.id)}
-            className="text-red-600"
-          >
-            <Trash2 className="w-4 h-4 mr-2" />
-            Delete
-          </DropdownMenuItem>
+          {canDeleteTask && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => onDelete(task.id)}
+                className="text-red-600"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete
+              </DropdownMenuItem>
+            </>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
       </div>
