@@ -20,9 +20,28 @@ export default function UserAvatar({ user, size = "default", showTooltip = true 
     lg: "w-12 h-12 text-base",
   };
 
+  const resolveMediaUrl = (url) => {
+    if (!url) return "";
+    if (/^https?:\/\//i.test(url)) return url;
+    if (url.startsWith('/')) {
+      const apiBase = import.meta.env.VITE_API_BASE_URL;
+      if (!apiBase) return url;
+      try {
+        return new URL(url, apiBase).toString();
+      } catch {
+        return url;
+      }
+    }
+    return url;
+  };
+
+  const avatarUrl = resolveMediaUrl(
+    user?.avatar_url || user?.avatar || user?.photo_url || user?.image_url || user?.profile_image || ""
+  );
+
   const avatarComponent = (
     <Avatar className={sizeClasses[size]}>
-      <AvatarImage src={user?.avatar_url} />
+      <AvatarImage src={avatarUrl} />
       <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-500 text-white">
         {getInitials(user?.full_name || user?.email)}
       </AvatarFallback>

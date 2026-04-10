@@ -53,7 +53,15 @@ export default function CommentsList({
   };
 
   const getUserByEmail = (email) => {
-    return users.find(u => u.email === email) || null;
+    if (!email) return null;
+    const normalized = String(email).trim().toLowerCase();
+    return users.find(u => String(u.email || '').trim().toLowerCase() === normalized) || null;
+  };
+
+  const getUserByName = (name) => {
+    if (!name) return null;
+    const normalized = String(name).trim().toLowerCase();
+    return users.find(u => String(u.full_name || '').trim().toLowerCase() === normalized) || null;
   };
 
   const getCommentAuthor = (comment) => {
@@ -61,9 +69,19 @@ export default function CommentsList({
       const byId = users.find((u) => u.id === comment.user_id);
       if (byId) return byId;
     }
+    if (comment?.created_by_user_id) {
+      const byCreatedById = users.find((u) => u.id === comment.created_by_user_id);
+      if (byCreatedById) return byCreatedById;
+    }
     if (comment?.created_by) {
       const byEmail = getUserByEmail(comment.created_by);
       if (byEmail) return byEmail;
+      const byName = getUserByName(comment.created_by);
+      if (byName) return byName;
+    }
+    if (comment?.user_name) {
+      const byUserName = getUserByName(comment.user_name);
+      if (byUserName) return byUserName;
     }
     return null;
   };

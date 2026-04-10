@@ -5,7 +5,7 @@ import { ROLES } from "@/components/shared/rbac";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Search, Shield } from "lucide-react";
 import { toast } from "react-hot-toast";
 
@@ -57,6 +57,24 @@ export default function UserRoleManager() {
 
   const getInitials = (name) => name?.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) || "U";
 
+  const resolveMediaUrl = (url) => {
+    if (!url) return "";
+    if (/^https?:\/\//i.test(url)) return url;
+    if (url.startsWith('/')) {
+      const apiBase = import.meta.env.VITE_API_BASE_URL;
+      if (!apiBase) return url;
+      try {
+        return new URL(url, apiBase).toString();
+      } catch {
+        return url;
+      }
+    }
+    return url;
+  };
+
+  const getUserAvatarUrl = (user) =>
+    resolveMediaUrl(user?.avatar_url || user?.avatar || user?.photo_url || user?.image_url || user?.profile_image || "");
+
   return (
     <div className="space-y-4">
       <div className="relative">
@@ -80,9 +98,10 @@ export default function UserRoleManager() {
           {filtered.map(user => (
             <div
               key={user.id}
-              className="flex items-center gap-4 p-4 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700 rounded-xl shadow-sm hover:shadow-md transition-all"
+              className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-4 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700 rounded-xl shadow-sm hover:shadow-md transition-all"
             >
-              <Avatar className="w-10 h-10 shrink-0">
+              <Avatar className="w-11 h-11 shrink-0">
+                <AvatarImage src={getUserAvatarUrl(user)} />
                 <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-500 text-white text-sm">
                   {getInitials(user.full_name)}
                 </AvatarFallback>
@@ -90,8 +109,23 @@ export default function UserRoleManager() {
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-slate-900 dark:text-white truncate">{user.full_name || "—"}</p>
                 <p className="text-sm text-slate-600 dark:text-slate-300 truncate">{user.email}</p>
+                <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                  {user.department && (
+                    <Badge variant="outline" className="text-[11px] font-normal">
+                      {user.department}
+                    </Badge>
+                  )}
+                  {user.position && (
+                    <Badge variant="outline" className="text-[11px] font-normal">
+                      {user.position}
+                    </Badge>
+                  )}
+                  {!user.department && !user.position && (
+                    <span className="text-xs text-slate-400">No additional profile details</span>
+                  )}
+                </div>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
                 <Badge className={`text-xs border font-medium ${ROLE_COLORS[user.role] || ROLE_COLORS.user}`}>
                   {ROLE_LABELS[user.role] || user.role}
                 </Badge>
@@ -99,7 +133,7 @@ export default function UserRoleManager() {
                   value={user.role || "user"}
                   onValueChange={role => updateRoleMutation.mutate({ userId: user.id, role })}
                 >
-                  <SelectTrigger className="w-48 h-9 text-sm bg-white dark:bg-slate-800">
+                  <SelectTrigger className="w-full sm:w-48 h-9 text-sm bg-white dark:bg-slate-800">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
