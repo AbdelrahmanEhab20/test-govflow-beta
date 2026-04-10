@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { Task, Subtask, Comment, TaskDependency, WorkflowStage } from '../models/index.js';
+import { Task, Subtask, Comment, TaskDependency, WorkflowStage, User } from '../models/index.js';
 import { config } from '../config/index.js';
 import { createHttpError } from '../middleware/errorHandler.js';
 import { notifyAssigneeTaskAssigned } from './taskAssignmentNotifications.js';
@@ -212,12 +212,39 @@ export async function deleteSubtask(id) {
 // ─── Comments ───────────────────────────────────────────────────────────────────
 
 export async function listComments(entityType, entityId) {
-  return Comment.find(
+  const comments = await Comment.find(
     withTenant({ entity_type: entityType, entity_id: entityId }),
   )
     .sort({ created_date: -1 })
     .lean()
     .exec();
+
+  const userIds = Array.from(
+    new Set(
+      comments
+        .map((comment) => String(comment.user_id || '').trim())
+        .filter(Boolean),
+    ),
+  );
+
+  if (userIds.length === 0) return comments;
+
+  const users = await User.find(withTenant({ id: { $in: userIds } }))
+    .select('id full_name email avatar_url')
+    .lean()
+    .exec();
+
+  const userById = new Map(users.map((user) => [String(user.id), user]));
+  return comments.map((comment) => {
+    const author = userById.get(String(comment.user_id || '').trim());
+    if (!author) return comment;
+    return {
+      ...comment,
+      user_name: comment.user_name || author.full_name || author.email || comment.created_by || 'Unknown User',
+      user_email: comment.user_email || author.email || '',
+      user_avatar_url: comment.user_avatar_url || author.avatar_url || '',
+    };
+  });
 }
 
 export async function createComment(data, actor = null) {
@@ -229,6 +256,8 @@ export async function createComment(data, actor = null) {
     updated_date: data.updated_date || now,
     user_id: data.user_id || actor?.id || '',
     user_name: data.user_name || actor?.full_name || actor?.email || 'Unknown User',
+    user_email: data.user_email || actor?.email || '',
+    user_avatar_url: data.user_avatar_url || actor?.avatar_url || '',
     ...data,
   });
   return doc.toObject();

@@ -83,6 +83,13 @@ export default function CommentsList({
       const byUserName = getUserByName(comment.user_name);
       if (byUserName) return byUserName;
     }
+    if (comment?.user_avatar_url || comment?.user_email || comment?.user_name) {
+      return {
+        full_name: comment.user_name || comment.created_by || 'Unknown user',
+        email: comment.user_email || comment.created_by || '',
+        avatar_url: comment.user_avatar_url || '',
+      };
+    }
     return null;
   };
 
