@@ -125,6 +125,26 @@ export default function Team() {
     return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
   };
 
+  const resolveMediaUrl = (url) => {
+    if (!url) return "";
+    if (/^https?:\/\//i.test(url)) return url;
+    if (url.startsWith('/')) {
+      const apiBase = import.meta.env.VITE_API_BASE_URL;
+      if (!apiBase) return url;
+      try {
+        return new URL(url, apiBase).toString();
+      } catch {
+        return url;
+      }
+    }
+    return url;
+  };
+
+  const getUserAvatarUrl = (user) => {
+    const raw = user?.avatar_url || user?.avatar || user?.photo_url || user?.image_url || user?.profile_image || "";
+    return resolveMediaUrl(raw);
+  };
+
   const getRoleBadgeColor = (role) => {
     switch (role) {
       case 'admin': return 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300';
@@ -218,21 +238,24 @@ export default function Team() {
                   key={user.id}
                   className="group overflow-hidden border border-slate-200/80 dark:border-slate-700 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 dark:bg-slate-900 rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur"
                 >
-                  <div className="h-14 sm:h-16 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600" />
-                  <CardContent className="pt-0 -mt-7 sm:-mt-8 pb-4 sm:pb-5 px-3 sm:px-5">
-                    <div className="flex items-start gap-3">
-                      <Avatar className="w-14 h-14 sm:w-16 sm:h-16 border-4 border-white dark:border-slate-900 shadow-sm">
-                        <AvatarImage src={user.avatar_url} />
-                        <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-500 text-white text-lg">
+                  <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 px-3 sm:px-4 py-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <Avatar className="w-12 h-12 sm:w-14 sm:h-14 border-2 border-white/80 shadow-sm">
+                        <AvatarImage src={getUserAvatarUrl(user)} />
+                        <AvatarFallback className="bg-blue-500 text-white text-base">
                           {getInitials(user.full_name)}
                         </AvatarFallback>
                       </Avatar>
-                      <div className="pt-1.5 sm:pt-2 flex-1 min-w-0">
-                        <h3 className="font-semibold text-base sm:text-lg text-slate-900 dark:text-white truncate">{user.full_name}</h3>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-base sm:text-lg text-white truncate">{user.full_name}</h3>
                         {user.position && (
-                          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 font-medium truncate">{user.position}</p>
+                          <p className="text-xs sm:text-sm text-white/90 font-medium truncate">{user.position}</p>
                         )}
-                        {canChangeRole ? (
+                      </div>
+                    </div>
+                  </div>
+                  <CardContent className="pb-4 sm:pb-5 px-3 sm:px-5 pt-3 sm:pt-4">
+                    {canChangeRole ? (
                           <Select
                             value={user.role || 'team_member'}
                             onValueChange={(newRole) => handleRoleChange(user.id, newRole)}
@@ -257,8 +280,6 @@ export default function Team() {
                             {getRoleDisplayName(user.role)}
                           </Badge>
                         )}
-                      </div>
-                    </div>
 
                     <div className="mt-3 sm:mt-4 space-y-1.5 border-t border-slate-100 dark:border-slate-700 pt-3">
                       <p className="text-sm font-medium text-slate-700 dark:text-slate-300">

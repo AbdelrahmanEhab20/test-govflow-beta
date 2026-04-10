@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { DragDropContext, Draggable, Droppable } from "@hello-pangea/dnd";
@@ -555,43 +556,46 @@ export default function MyDashboard() {
         </Droppable>
       </DragDropContext>
 
-      {showAddWidget ? (
-        <div className="fixed inset-0 bg-black/45 backdrop-blur-[1px] z-50 flex items-center justify-center p-4">
-          <div className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-xl">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-2xl leading-none font-semibold text-slate-900 dark:text-slate-100">Add Widget</h2>
-              <button onClick={() => setShowAddWidget(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300" type="button">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="space-y-2">
-              {AVAILABLE_WIDGETS.filter((w) => !widgets.includes(w.id)).map((w) => {
-                const Icon = w.icon;
-                return (
-                  <div key={w.id} className="rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-3 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/30">
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center">
-                        <Icon className="w-5 h-5 text-slate-700 dark:text-slate-200" />
+      {showAddWidget && typeof document !== "undefined"
+        ? createPortal(
+            <div className="fixed inset-0 bg-black/45 backdrop-blur-[1px] z-[70] flex items-center justify-center p-4">
+              <div className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-xl">
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-2xl leading-none font-semibold text-slate-900 dark:text-slate-100">Add Widget</h2>
+                  <button onClick={() => setShowAddWidget(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300" type="button">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {AVAILABLE_WIDGETS.filter((w) => !widgets.includes(w.id)).map((w) => {
+                    const Icon = w.icon;
+                    return (
+                      <div key={w.id} className="rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-3 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/30">
+                        <div className="flex items-start gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center">
+                            <Icon className="w-5 h-5 text-slate-700 dark:text-slate-200" />
+                          </div>
+                          <div>
+                            <div className="font-semibold text-slate-800 dark:text-slate-100">{w.title}</div>
+                            <div className="text-sm text-slate-500 dark:text-slate-400">{w.description}</div>
+                          </div>
+                        </div>
+                        <Button size="sm" onClick={() => addWidget(w.id)}>
+                          <Plus className="w-4 h-4 mr-1" />
+                          Add
+                        </Button>
                       </div>
-                      <div>
-                        <div className="font-semibold text-slate-800 dark:text-slate-100">{w.title}</div>
-                        <div className="text-sm text-slate-500 dark:text-slate-400">{w.description}</div>
-                      </div>
-                    </div>
-                    <Button size="sm" onClick={() => addWidget(w.id)}>
-                      <Plus className="w-4 h-4 mr-1" />
-                      Add
-                    </Button>
-                  </div>
-                );
-              })}
-              {!AVAILABLE_WIDGETS.some((w) => !widgets.includes(w.id)) ? (
-                <div className="text-sm text-slate-500 dark:text-slate-400 py-3">All widgets are already added.</div>
-              ) : null}
-            </div>
-          </div>
-        </div>
-      ) : null}
+                    );
+                  })}
+                  {!AVAILABLE_WIDGETS.some((w) => !widgets.includes(w.id)) ? (
+                    <div className="text-sm text-slate-500 dark:text-slate-400 py-3">All widgets are already added.</div>
+                  ) : null}
+                </div>
+              </div>
+            </div>,
+            document.body
+          )
+        : null}
     </div>
   );
 }
