@@ -8,6 +8,7 @@ import {
   Paperclip,
   Download,
   ExternalLink,
+  Expand,
   Tag,
   User as UserIcon,
   Archive,
@@ -24,6 +25,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const CATEGORY_COLORS = {
   general: "bg-slate-100 text-slate-700",
@@ -36,6 +43,34 @@ const CATEGORY_COLORS = {
   other: "bg-slate-100 text-slate-700"
 };
 
+function buildEmailSrcDoc(bodyHtml) {
+  return `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <base target="_blank" />
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        color: #0f172a;
+        background: #ffffff;
+      }
+      body {
+        padding: 16px;
+        overflow-wrap: anywhere;
+      }
+      img, video, iframe {
+        max-width: 100%;
+      }
+    </style>
+  </head>
+  <body>${bodyHtml || ""}</body>
+</html>`;
+}
+
 export default function EmailViewer({ 
   email, 
   onClose, 
@@ -46,6 +81,8 @@ export default function EmailViewer({
   onAssign,
   users = []
 }) {
+  const [isExpandedOpen, setIsExpandedOpen] = React.useState(false);
+
   if (!email) {
     return (
       <div className="flex-1 flex items-center justify-center bg-slate-50 dark:bg-slate-900">
@@ -76,6 +113,14 @@ export default function EmailViewer({
               className="bg-blue-600 hover:bg-blue-700"
             >
               Convert to Task
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setIsExpandedOpen(true)}
+              className="hidden sm:inline-flex"
+            >
+              <Expand className="w-4 h-4 mr-2" />
+              Open Mail
             </Button>
 
             <DropdownMenu>
@@ -184,9 +229,11 @@ export default function EmailViewer({
       {/* Body */}
       <ScrollArea className="flex-1 p-6 dark:bg-slate-900">
         {email.body_html ? (
-          <div 
-            className="prose dark:prose-invert max-w-none"
-            dangerouslySetInnerHTML={{ __html: email.body_html }}
+          <iframe
+            title="Email content"
+            className="w-full min-h-[420px] rounded-md border border-slate-200 dark:border-slate-700 bg-white"
+            sandbox="allow-popups allow-popups-to-escape-sandbox"
+            srcDoc={buildEmailSrcDoc(email.body_html)}
           />
         ) : (
           <div className="whitespace-pre-wrap text-slate-700 dark:text-slate-300">
@@ -243,6 +290,28 @@ export default function EmailViewer({
           </div>
         </div>
       )}
+
+      <Dialog open={isExpandedOpen} onOpenChange={setIsExpandedOpen}>
+        <DialogContent className="w-[95vw] max-w-6xl h-[88vh] p-0 overflow-hidden">
+          <DialogHeader className="px-4 py-3 border-b border-slate-200 dark:border-slate-700">
+            <DialogTitle className="truncate">{email.subject}</DialogTitle>
+          </DialogHeader>
+          <div className="h-[calc(88vh-56px)] bg-slate-50 dark:bg-slate-900 p-3">
+            {email.body_html ? (
+              <iframe
+                title="Expanded email content"
+                className="w-full h-full rounded-md border border-slate-200 dark:border-slate-700 bg-white"
+                sandbox="allow-popups allow-popups-to-escape-sandbox"
+                srcDoc={buildEmailSrcDoc(email.body_html)}
+              />
+            ) : (
+              <div className="h-full overflow-auto rounded-md border border-slate-200 dark:border-slate-700 bg-white p-4 whitespace-pre-wrap text-slate-700">
+                {email.body_text || email.body_preview}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
