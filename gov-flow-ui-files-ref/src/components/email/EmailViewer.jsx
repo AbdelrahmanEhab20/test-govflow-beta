@@ -101,23 +101,24 @@ export default function EmailViewer({
   return (
     <div className="flex-1 flex flex-col bg-white dark:bg-slate-900">
       {/* Header */}
-      <div className="p-4 border-b border-slate-200 dark:border-slate-700">
-        <div className="flex items-center justify-between mb-4">
+      <div className="p-3 sm:p-4 border-b border-slate-200 dark:border-slate-700">
+        <div className="flex items-start justify-between gap-2 mb-4">
           <Button variant="ghost" size="icon" onClick={onClose} className="lg:hidden">
             <ArrowLeft className="w-5 h-5" />
           </Button>
           
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2 flex-1 min-w-0">
             <Button 
               onClick={onConvertToTask}
               className="bg-blue-600 hover:bg-blue-700"
+              size="sm"
             >
               Convert to Task
             </Button>
             <Button
               variant="outline"
               onClick={() => setIsExpandedOpen(true)}
-              className="hidden sm:inline-flex"
+              size="sm"
             >
               <Expand className="w-4 h-4 mr-2" />
               Open Mail
@@ -125,7 +126,7 @@ export default function EmailViewer({
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline">
+                <Button variant="outline" size="sm">
                   <Tag className="w-4 h-4 mr-2" />
                   Category
                 </Button>
@@ -147,7 +148,7 @@ export default function EmailViewer({
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline">
+                <Button variant="outline" size="sm">
                   <UserIcon className="w-4 h-4 mr-2" />
                   Assign
                 </Button>
@@ -167,7 +168,7 @@ export default function EmailViewer({
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="sm">
                   <MoreHorizontal className="w-5 h-5" />
                 </Button>
               </DropdownMenuTrigger>
@@ -187,22 +188,22 @@ export default function EmailViewer({
         </div>
 
         {/* Subject */}
-        <h2 className="text-xl font-semibold text-slate-900 dark:text-white">{email.subject}</h2>
+        <h2 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white break-words">{email.subject}</h2>
         
         {/* Meta */}
-        <div className="flex items-start justify-between mt-4">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mt-4">
+          <div className="flex items-center gap-3 min-w-0">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center text-white font-medium">
               {email.from_name?.[0]?.toUpperCase() || email.from_email?.[0]?.toUpperCase()}
             </div>
-            <div>
-              <p className="font-medium text-slate-900 dark:text-white">
+            <div className="min-w-0">
+              <p className="font-medium text-slate-900 dark:text-white truncate">
                 {email.from_name || email.from_email}
               </p>
-              <p className="text-sm text-slate-500 dark:text-slate-400">{email.from_email}</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400 truncate">{email.from_email}</p>
             </div>
           </div>
-          <div className="text-right text-sm text-slate-500 dark:text-slate-400">
+          <div className="text-left sm:text-right text-sm text-slate-500 dark:text-slate-400">
             <p>{format(new Date(email.received_at), 'MMM d, yyyy')}</p>
             <p>{format(new Date(email.received_at), 'h:mm a')}</p>
           </div>
@@ -227,11 +228,11 @@ export default function EmailViewer({
       </div>
 
       {/* Body */}
-      <ScrollArea className="flex-1 p-6 dark:bg-slate-900">
+      <ScrollArea className="flex-1 p-3 sm:p-6 dark:bg-slate-900">
         {email.body_html ? (
           <iframe
             title="Email content"
-            className="w-full min-h-[420px] rounded-md border border-slate-200 dark:border-slate-700 bg-white"
+            className="w-full min-h-[300px] sm:min-h-[420px] rounded-md border border-slate-200 dark:border-slate-700 bg-white"
             sandbox="allow-popups allow-popups-to-escape-sandbox"
             srcDoc={buildEmailSrcDoc(email.body_html)}
           />
@@ -292,7 +293,7 @@ export default function EmailViewer({
       )}
 
       <Dialog open={isExpandedOpen} onOpenChange={setIsExpandedOpen}>
-        <DialogContent className="w-[95vw] max-w-6xl h-[88vh] p-0 overflow-hidden">
+        <DialogContent className="w-[96vw] sm:w-[95vw] max-w-6xl h-[90vh] sm:h-[88vh] p-0 overflow-hidden">
           <DialogHeader className="px-4 py-3 border-b border-slate-200 dark:border-slate-700">
             <DialogTitle className="truncate">{email.subject}</DialogTitle>
           </DialogHeader>

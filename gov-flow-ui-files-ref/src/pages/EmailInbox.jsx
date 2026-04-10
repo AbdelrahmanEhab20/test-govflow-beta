@@ -245,22 +245,22 @@ export default function EmailInbox() {
   };
 
   return (
-    <div className="h-[calc(100vh-4rem)] flex flex-col">
+    <div className="h-[calc(100vh-4rem)] flex flex-col min-w-0">
       {/* Header */}
-      <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="p-3 sm:p-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
           <div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Email Inbox</h1>
             <p className="text-slate-500 dark:text-slate-400 mt-1">Department mailbox</p>
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             {currentUser && <MailboxSelector 
               user={currentUser} 
               activeMailbox={activeMailbox}
               onMailboxChange={setActiveMailbox}
             />}
-            <Button variant="outline" onClick={handleRefresh} disabled={syncInboxMutation.isPending}>
+            <Button variant="outline" onClick={handleRefresh} disabled={syncInboxMutation.isPending} className="ml-auto sm:ml-0">
               <RefreshCw className={`w-4 h-4 mr-2 ${syncInboxMutation.isPending ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
@@ -268,9 +268,10 @@ export default function EmailInbox() {
         </div>
 
         {/* Tabs and Filters */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4 mt-4">
-          <Tabs value={activeView} onValueChange={setActiveView}>
-            <TabsList>
+        <div className="flex flex-col gap-3 sm:gap-4 mt-4">
+          <div className="overflow-x-auto pb-1 -mx-1 px-1">
+            <Tabs value={activeView} onValueChange={setActiveView}>
+              <TabsList className="w-max min-w-full sm:min-w-0">
               <TabsTrigger value="all" className="gap-1.5">
                 <Inbox className="w-4 h-4" />
                 All
@@ -297,11 +298,12 @@ export default function EmailInbox() {
                 <Archive className="w-4 h-4" />
                 Archived
               </TabsTrigger>
-            </TabsList>
-          </Tabs>
+              </TabsList>
+            </Tabs>
+          </div>
 
-          <div className="flex items-center gap-2 flex-1 justify-end">
-            <div className="relative flex-1 max-w-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <div className="relative flex-1 sm:max-w-xs">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input
                 placeholder="Search emails..."
@@ -311,7 +313,7 @@ export default function EmailInbox() {
               />
             </div>
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="w-full sm:w-40">
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
               <SelectContent>
