@@ -63,12 +63,12 @@ export default function TaskFilters({
           />
         </div>
         
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2 w-full sm:w-auto">
           <Select 
             value={filters.status || 'all'} 
             onValueChange={(value) => onFilterChange({ ...filters, status: value })}
           >
-            <SelectTrigger className="w-44">
+            <SelectTrigger className="w-full sm:w-44">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -82,7 +82,7 @@ export default function TaskFilters({
             value={filters.priority || 'all'} 
             onValueChange={(value) => onFilterChange({ ...filters, priority: value })}
           >
-            <SelectTrigger className="w-36">
+            <SelectTrigger className="w-full sm:w-36">
               <SelectValue placeholder="Priority" />
             </SelectTrigger>
             <SelectContent>
@@ -96,7 +96,7 @@ export default function TaskFilters({
             value={filters.lead || 'all'} 
             onValueChange={(value) => onFilterChange({ ...filters, lead: value })}
           >
-            <SelectTrigger className="w-40">
+            <SelectTrigger className="w-full sm:w-40">
               <SelectValue placeholder="Lead" />
             </SelectTrigger>
             <SelectContent>
@@ -114,7 +114,7 @@ export default function TaskFilters({
               value={filters.pillar || 'all'} 
               onValueChange={(value) => onFilterChange({ ...filters, pillar: value })}
             >
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="w-full sm:w-40">
                 <SelectValue placeholder="Pillar" />
               </SelectTrigger>
               <SelectContent>

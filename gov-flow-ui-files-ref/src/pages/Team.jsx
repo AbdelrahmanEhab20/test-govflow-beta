@@ -177,9 +177,9 @@ export default function Team() {
   };
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="p-3 sm:p-4 lg:p-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-6 sm:mb-8">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">My Team</h1>
       <p className="text-slate-500 dark:text-slate-400 mt-1">{(currentUserDepartment || fallbackDepartment)} members and workload</p>
@@ -209,28 +209,28 @@ export default function Team() {
           />
 
           {/* Team Grid for Department */}
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-4 sm:gap-5 mb-8">
             {usersByDepartment[dept].map(user => {
               const stats = getUserStats(user.id);
               
               return (
                 <Card
                   key={user.id}
-                  className="overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-all dark:bg-slate-900 rounded-xl"
+                  className="group overflow-hidden border border-slate-200/80 dark:border-slate-700 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 dark:bg-slate-900 rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur"
                 >
-                  <div className="h-16 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600" />
-                  <CardContent className="pt-0 -mt-8 pb-5">
+                  <div className="h-14 sm:h-16 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600" />
+                  <CardContent className="pt-0 -mt-7 sm:-mt-8 pb-4 sm:pb-5 px-3 sm:px-5">
                     <div className="flex items-start gap-3">
-                      <Avatar className="w-16 h-16 border-4 border-white dark:border-slate-900 shadow-sm">
+                      <Avatar className="w-14 h-14 sm:w-16 sm:h-16 border-4 border-white dark:border-slate-900 shadow-sm">
                         <AvatarImage src={user.avatar_url} />
                         <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-500 text-white text-lg">
                           {getInitials(user.full_name)}
                         </AvatarFallback>
                       </Avatar>
-                      <div className="pt-2 flex-1 min-w-0">
-                        <h3 className="font-semibold text-lg text-slate-900 dark:text-white truncate">{user.full_name}</h3>
+                      <div className="pt-1.5 sm:pt-2 flex-1 min-w-0">
+                        <h3 className="font-semibold text-base sm:text-lg text-slate-900 dark:text-white truncate">{user.full_name}</h3>
                         {user.position && (
-                          <p className="text-sm text-slate-600 dark:text-slate-300 font-medium truncate">{user.position}</p>
+                          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 font-medium truncate">{user.position}</p>
                         )}
                         {canChangeRole ? (
                           <Select
@@ -238,7 +238,7 @@ export default function Team() {
                             onValueChange={(newRole) => handleRoleChange(user.id, newRole)}
                             disabled={getAssignableRolesForUser(user).length === 0}
                           >
-                            <SelectTrigger className="w-[165px] h-8 mt-2 dark:bg-slate-800 dark:border-slate-600">
+                            <SelectTrigger className="w-[150px] sm:w-[165px] h-8 mt-2 dark:bg-slate-800 dark:border-slate-600">
                               <Shield className="w-3 h-3 mr-1" />
                               <SelectValue placeholder="Select role">
                                 {getRoleDisplayName(user.role)}
@@ -260,12 +260,12 @@ export default function Team() {
                       </div>
                     </div>
 
-                    <div className="mt-4 space-y-1.5 border-t border-slate-100 dark:border-slate-700 pt-3">
+                    <div className="mt-3 sm:mt-4 space-y-1.5 border-t border-slate-100 dark:border-slate-700 pt-3">
                       <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
                         {user.department || fallbackDepartment}
                       </p>
                       
-                      <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                      <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300 min-w-0">
                         <a href={`mailto:${user.email}`} className="flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                           <Mail className="w-3.5 h-3.5 shrink-0" />
                           <span className="truncate">{user.email}</span>
@@ -274,23 +274,23 @@ export default function Team() {
                     </div>
 
                     {/* Stats */}
-                    <div className="mt-4 rounded-lg bg-slate-50 dark:bg-slate-800/60 p-3">
+                    <div className="mt-3 sm:mt-4 rounded-xl bg-slate-50/90 dark:bg-slate-800/60 p-3">
                       <div className="grid grid-cols-4 gap-2 text-center">
-                        <div>
-                          <p className="text-lg font-semibold text-slate-900 dark:text-white">{stats.total}</p>
-                          <p className="text-xs text-slate-500 dark:text-slate-400">Tasks</p>
+                        <div className="rounded-lg bg-white/80 dark:bg-slate-900/40 p-1.5">
+                          <p className="text-base sm:text-lg font-semibold text-slate-900 dark:text-white">{stats.total}</p>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400">Tasks</p>
                         </div>
-                        <div>
-                          <p className="text-lg font-semibold text-emerald-600 dark:text-emerald-400">{stats.completed}</p>
-                          <p className="text-xs text-slate-500 dark:text-slate-400">Done</p>
+                        <div className="rounded-lg bg-white/80 dark:bg-slate-900/40 p-1.5">
+                          <p className="text-base sm:text-lg font-semibold text-emerald-600 dark:text-emerald-400">{stats.completed}</p>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400">Done</p>
                         </div>
-                        <div>
-                          <p className="text-lg font-semibold text-blue-600 dark:text-blue-400">{stats.inProgress}</p>
-                          <p className="text-xs text-slate-500 dark:text-slate-400">Active</p>
+                        <div className="rounded-lg bg-white/80 dark:bg-slate-900/40 p-1.5">
+                          <p className="text-base sm:text-lg font-semibold text-blue-600 dark:text-blue-400">{stats.inProgress}</p>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400">Active</p>
                         </div>
-                        <div>
-                          <p className="text-lg font-semibold text-red-600 dark:text-red-400">{stats.overdue}</p>
-                          <p className="text-xs text-slate-500 dark:text-slate-400">Overdue</p>
+                        <div className="rounded-lg bg-white/80 dark:bg-slate-900/40 p-1.5">
+                          <p className="text-base sm:text-lg font-semibold text-red-600 dark:text-red-400">{stats.overdue}</p>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400">Overdue</p>
                         </div>
                       </div>
 
@@ -304,7 +304,7 @@ export default function Team() {
                     </div>
 
                     {/* Actions */}
-                    <div className="mt-4 flex gap-2">
+                    <div className="mt-3 sm:mt-4 flex gap-2">
                       <Link to={createPageUrl(`Tasks?lead=${user.id}`)} className="flex-1">
                         <Button
                           variant="outline"

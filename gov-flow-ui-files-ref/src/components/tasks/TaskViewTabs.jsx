@@ -44,9 +44,9 @@ export default function TaskViewTabs({
 
 
   return (
-    <div className="overflow-x-auto pb-2">
+    <div className="overflow-x-auto pb-2 -mx-1 px-1">
       <Tabs value={activeView} onValueChange={onViewChange}>
-        <TabsList className="bg-white dark:bg-slate-800 p-1 h-auto flex-wrap gap-1">
+        <TabsList className="bg-white dark:bg-slate-800 p-1 h-auto flex-nowrap gap-1 w-max min-w-full">
           {views.map((view) => {
             const Icon = view.icon;
             return (
@@ -56,7 +56,7 @@ export default function TaskViewTabs({
                 className="gap-1.5 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white text-slate-600 dark:text-slate-400"
               >
                 <Icon className="w-4 h-4" />
-                <span className="hidden sm:inline">{view.label}</span>
+                <span className="hidden sm:inline whitespace-nowrap">{view.label}</span>
                 <Badge
                   variant={view.highlight ? "destructive" : "secondary"}
                   className="ml-1 px-1.5 py-0 text-xs"

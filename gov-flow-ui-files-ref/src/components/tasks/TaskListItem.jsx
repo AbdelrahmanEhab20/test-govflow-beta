@@ -92,7 +92,7 @@ export default function TaskListItem({
   };
 
   return (
-    <div className="flex items-center gap-4 p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 transition-all group">
+    <div className="flex items-start sm:items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 transition-all group">
       {/* Checkbox */}
       <Checkbox
         checked={isSelected}
@@ -103,12 +103,12 @@ export default function TaskListItem({
 
       {/* Main Content */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-start gap-3">
+        <div className="flex items-start gap-2 sm:gap-3">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 min-w-0">
               <Link
                 to={createPageUrl(`TaskDetail?id=${task.id}`)}
-                className="font-medium text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 truncate"
+                className="font-medium text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 truncate text-base sm:text-lg"
               >
                 {task.pillar}
               </Link>
@@ -118,17 +118,17 @@ export default function TaskListItem({
             </div>
 
             {task.brief_description && (
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1 sm:line-clamp-2">
                 {task.brief_description}
               </p>
             )}
 
             {/* Meta info */}
-            <div className="flex items-center gap-4 mt-2 text-xs text-slate-500 dark:text-slate-400">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
               {leadUser && (
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 min-w-0">
                   <UserAvatar user={leadUser} size="xs" showTooltip={false} />
-                  <span>{leadUser.full_name}</span>
+                  <span className="truncate max-w-[150px] sm:max-w-none">{leadUser.full_name}</span>
                 </div>
               )}
 
@@ -142,14 +142,14 @@ export default function TaskListItem({
           </div>
 
           {/* Status & Priority */}
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex flex-wrap sm:flex-nowrap items-center justify-start sm:justify-end gap-1.5 sm:gap-2 shrink-0">
             {isEditing === 'status' ? (
               <Select
                 value={task.status}
                 onValueChange={handleStatusChange}
                 onOpenChange={(open) => !open && setIsEditing(null)}
               >
-                <SelectTrigger className="w-36 h-8 text-xs">
+                <SelectTrigger className="w-32 sm:w-36 h-8 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -173,7 +173,7 @@ export default function TaskListItem({
         </div>
 
         {/* Progress */}
-        <div className="mt-3 max-w-xs">
+        <div className="mt-3 max-w-full sm:max-w-xs">
           {isEditing === 'progress' ? (
             <Select
               value={String(task.completion_percent || 0)}
@@ -207,7 +207,7 @@ export default function TaskListItem({
           <Button
             variant="ghost"
             size="icon"
-            className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+            className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0"
           >
             <MoreHorizontal className="w-4 h-4" />
           </Button>

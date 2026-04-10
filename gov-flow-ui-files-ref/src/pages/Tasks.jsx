@@ -226,21 +226,21 @@ export default function Tasks() {
   };
 
   return (
-    <div className="p-6 lg:p-8 space-y-6 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-950 min-h-screen">
+    <div className="p-3 sm:p-4 lg:p-8 space-y-5 sm:space-y-6 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-950 min-h-screen">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Tasks</h1>
           <p className="text-slate-500 dark:text-slate-400 mt-1">Manage department initiatives and tasks</p>
         </div>
         
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={handleExport}>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Button variant="outline" onClick={handleExport} className="flex-1 sm:flex-none">
             <Download className="w-4 h-4 mr-2" />
             Export
           </Button>
-          <Link to={createPageUrl('TaskForm')}>
-            <Button>
+          <Link to={createPageUrl('TaskForm')} className="flex-1 sm:flex-none">
+            <Button className="w-full">
               <Plus className="w-4 h-4 mr-2" />
               New Task
             </Button>
@@ -266,16 +266,16 @@ export default function Tasks() {
 
       {/* Bulk Actions */}
       {selectedTasks.length > 0 && (
-        <div className="flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-800">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-800">
           <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
             {selectedTasks.length} task{selectedTasks.length !== 1 ? 's' : ''} selected
           </span>
-          <div className="flex-1" />
+          <div className="hidden sm:block flex-1" />
           <Button 
             variant="outline" 
             size="sm" 
             onClick={handleBulkComplete}
-            className="text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+            className="text-emerald-600 border-emerald-200 hover:bg-emerald-50 w-full sm:w-auto"
           >
             <CheckCircle2 className="w-4 h-4 mr-1" />
             Mark Complete
@@ -284,7 +284,7 @@ export default function Tasks() {
             variant="outline" 
             size="sm" 
             onClick={handleBulkDelete}
-            className="text-red-600 border-red-200 hover:bg-red-50"
+            className="text-red-600 border-red-200 hover:bg-red-50 w-full sm:w-auto"
           >
             <Trash2 className="w-4 h-4 mr-1" />
             Delete
