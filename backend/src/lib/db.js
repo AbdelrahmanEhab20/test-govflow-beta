@@ -1,7 +1,18 @@
 import mongoose from 'mongoose';
 import { config } from '../config/index.js';
+import { logger } from './logger.js';
 
 let connected = false;
+
+function getMongoTarget(uri) {
+  try {
+    const normalized = uri.startsWith('mongodb') ? uri : `mongodb://${uri}`;
+    const parsed = new URL(normalized);
+    return `${parsed.protocol}//${parsed.hostname}`;
+  } catch {
+    return 'unparseable-mongo-uri';
+  }
+}
 
 /**
  * Connect to MongoDB.
@@ -12,20 +23,34 @@ let connected = false;
 export async function connectDB({ required = process.env.NODE_ENV === 'production' } = {}) {
   if (connected) return;
 
+  const mongoTarget = getMongoTarget(config.mongoUri);
+  logger.info('Attempting MongoDB connection', {
+    target: mongoTarget,
+    required,
+    env: process.env.NODE_ENV || 'development',
+  });
+
   try {
     await mongoose.connect(config.mongoUri, {
       serverSelectionTimeoutMS: 5000,
     });
     connected = true;
-    console.log(`[db] Connected to MongoDB at ${config.mongoUri}`);
+    logger.info('MongoDB connected', { target: mongoTarget });
   } catch (err) {
-    console.error('[db] MongoDB connection failed:', err.message);
+    logger.error('MongoDB connection failed', {
+      target: mongoTarget,
+      error: err.message,
+      required,
+    });
     if (required) throw err;
-    console.warn('[db] Continuing without MongoDB (development mode) – start MongoDB to use data endpoints');
+    logger.warn('Continuing without MongoDB (development mode)', {
+      target: mongoTarget,
+      hint: 'Start MongoDB to use data endpoints',
+    });
   }
 }
 
 mongoose.connection.on('disconnected', () => {
   connected = false;
-  console.warn('[db] MongoDB disconnected');
+  logger.warn('MongoDB disconnected');
 });

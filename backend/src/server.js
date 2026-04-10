@@ -5,6 +5,12 @@ import app from './app.js';
 
 async function startServer() {
   try {
+    logger.info('Starting GovFlow backend', {
+      port: config.port,
+      env: process.env.NODE_ENV || 'development',
+      tenant: config.defaultTenantId,
+    });
+
     await connectDB();
 
     const server = app.listen(config.port, () => {

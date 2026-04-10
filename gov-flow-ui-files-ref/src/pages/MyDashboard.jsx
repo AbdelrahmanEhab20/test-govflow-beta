@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { listTasks } from "@/api/tasksApi";
 import { listEmails } from "@/api/emailApi";
+import { listUsers } from "@/api/usersApi";
 import { listWorkflowStages } from "@/api/workflowApi";
 import { createPageUrl } from "@/utils";
 import { useAuth } from "@/lib/AuthContext";
@@ -135,6 +136,11 @@ export default function MyDashboard() {
     queryFn: () => listEmails({}, "-received_at", 20),
   });
 
+  const { data: users = [] } = useQuery({
+    queryKey: ["dashboardUsers"],
+    queryFn: () => listUsers(),
+  });
+
   const { data: workflowStages = [] } = useQuery({
     queryKey: ["dashboardWorkflowStages"],
     queryFn: () => listWorkflowStages({ is_active: true }, "order"),
@@ -143,6 +149,58 @@ export default function MyDashboard() {
   const stageSummary = useMemo(() => {
     return getKanbanStageCounts(tasks, workflowStages);
   }, [tasks, workflowStages]);
+
+  const userNameById = useMemo(() => {
+    const map = new Map();
+    for (const u of users) {
+      if (u?.id) map.set(u.id, u.full_name || u.email || "Unknown user");
+    }
+    return map;
+  }, [users]);
+
+  const myTasks = useMemo(() => {
+    if (!user?.id) return [];
+    return tasks.filter((task) => task.lead_user_id === user.id);
+  }, [tasks, user?.id]);
+
+  const upcomingDeadlines = useMemo(() => {
+    const now = Date.now();
+    const twoWeeksMs = 14 * 24 * 60 * 60 * 1000;
+    return myTasks
+      .filter((task) => task.due_date && task.status !== "completed")
+      .map((task) => ({ ...task, dueTs: new Date(task.due_date).getTime() }))
+      .filter((task) => Number.isFinite(task.dueTs) && task.dueTs >= now && task.dueTs <= now + twoWeeksMs)
+      .sort((a, b) => a.dueTs - b.dueTs)
+      .slice(0, 5);
+  }, [myTasks]);
+
+  const recentTeamActivity = useMemo(() => {
+    return [...tasks]
+      .sort((a, b) => new Date(b.updated_date || b.created_date || 0) - new Date(a.updated_date || a.created_date || 0))
+      .slice(0, 6);
+  }, [tasks]);
+
+  const myProgress = useMemo(() => {
+    const total = myTasks.length;
+    const completed = myTasks.filter((task) => task.status === "completed").length;
+    const active = myTasks.filter((task) => task.status === "in_progress").length;
+    const overdue = myTasks.filter((task) => {
+      if (!task.due_date || task.status === "completed") return false;
+      return new Date(task.due_date).getTime() < Date.now();
+    }).length;
+    const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+    return { total, completed, active, overdue, completionRate };
+  }, [myTasks]);
+
+  const formatDueLabel = (dueDate) => {
+    if (!dueDate) return "No due date";
+    const due = new Date(dueDate).getTime();
+    if (!Number.isFinite(due)) return "No due date";
+    const diffDays = Math.ceil((due - Date.now()) / (24 * 60 * 60 * 1000));
+    if (diffDays <= 0) return "Due today";
+    if (diffDays === 1) return "Due tomorrow";
+    return `Due in ${diffDays} days`;
+  };
 
   useEffect(() => {
     if (!user?.id) return;
@@ -223,7 +281,22 @@ export default function MyDashboard() {
     if (widgetId === "upcomingDeadlines") {
       return (
         <WidgetShell id={widgetId} title="Upcoming Deadlines" editing={editing} onRemove={removeWidget} className="min-h-[180px]">
-          <div className="text-slate-500 dark:text-slate-400">No upcoming deadlines 🎉</div>
+          {upcomingDeadlines.length === 0 ? (
+            <div className="text-slate-500 dark:text-slate-400">No upcoming deadlines 🎉</div>
+          ) : (
+            <div className="space-y-2.5">
+              {upcomingDeadlines.map((task) => (
+                <Link
+                  key={task.id}
+                  to={createPageUrl(`TaskDetail?id=${task.id}`)}
+                  className="block rounded-lg border border-slate-100 dark:border-slate-700 px-3 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800"
+                >
+                  <div className="font-medium text-sm text-slate-800 dark:text-slate-100 truncate">{task.pillar}</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">{formatDueLabel(task.due_date)}</div>
+                </Link>
+              ))}
+            </div>
+          )}
         </WidgetShell>
       );
     }
@@ -246,7 +319,33 @@ export default function MyDashboard() {
     if (widgetId === "myProgress") {
       return (
         <WidgetShell id={widgetId} title="My Progress" editing={editing} onRemove={removeWidget} className="min-h-[180px]">
-          <div className="text-slate-500 dark:text-slate-400">Progress insights will appear here.</div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+            <div className="rounded-lg bg-slate-50 dark:bg-slate-800 p-2.5">
+              <div className="text-xl font-semibold text-slate-900 dark:text-white">{myProgress.total}</div>
+              <div className="text-xs text-slate-500 dark:text-slate-400">Assigned</div>
+            </div>
+            <div className="rounded-lg bg-emerald-50 dark:bg-emerald-900/20 p-2.5">
+              <div className="text-xl font-semibold text-emerald-700 dark:text-emerald-300">{myProgress.completed}</div>
+              <div className="text-xs text-emerald-700/80 dark:text-emerald-300/80">Done</div>
+            </div>
+            <div className="rounded-lg bg-blue-50 dark:bg-blue-900/20 p-2.5">
+              <div className="text-xl font-semibold text-blue-700 dark:text-blue-300">{myProgress.active}</div>
+              <div className="text-xs text-blue-700/80 dark:text-blue-300/80">Active</div>
+            </div>
+            <div className="rounded-lg bg-red-50 dark:bg-red-900/20 p-2.5">
+              <div className="text-xl font-semibold text-red-700 dark:text-red-300">{myProgress.overdue}</div>
+              <div className="text-xs text-red-700/80 dark:text-red-300/80">Overdue</div>
+            </div>
+          </div>
+          <div className="mt-3">
+            <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
+              <span>Completion</span>
+              <span>{myProgress.completionRate}%</span>
+            </div>
+            <div className="h-2 w-full rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+              <div className="h-full bg-blue-600 rounded-full" style={{ width: `${myProgress.completionRate}%` }} />
+            </div>
+          </div>
         </WidgetShell>
       );
     }
@@ -254,7 +353,24 @@ export default function MyDashboard() {
     if (widgetId === "teamActivity") {
       return (
         <WidgetShell id={widgetId} title="Team Activity" editing={editing} onRemove={removeWidget} className="min-h-[180px]">
-          <div className="text-slate-500 dark:text-slate-400">No recent activity</div>
+          {recentTeamActivity.length === 0 ? (
+            <div className="text-slate-500 dark:text-slate-400">No recent activity</div>
+          ) : (
+            <div className="space-y-2">
+              {recentTeamActivity.map((task) => (
+                <Link
+                  key={task.id}
+                  to={createPageUrl(`TaskDetail?id=${task.id}`)}
+                  className="block rounded-lg px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800"
+                >
+                  <div className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">{task.pillar}</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate">
+                    {userNameById.get(task.lead_user_id) || "Unassigned"} · {task.status?.replace("_", " ") || "unknown"}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
         </WidgetShell>
       );
     }
@@ -366,30 +482,36 @@ export default function MyDashboard() {
   };
 
   return (
-    <div className="p-6 lg:p-8 space-y-5 bg-slate-50 dark:bg-slate-950 min-h-full">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+    <div className="p-4 sm:p-5 lg:p-8 space-y-5 bg-slate-50 dark:bg-slate-950 min-h-full">
+      <div className="flex flex-col gap-3 sm:gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex items-start gap-3 min-w-0">
           <div className="w-11 h-11 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-sm">
             <Grid3X3 className="w-5 h-5" />
           </div>
-          <div>
-            <h1 className="text-[42px] leading-[1.05] font-bold tracking-tight text-slate-900 dark:text-white">My Dashboard</h1>
-            <p className="text-slate-500 dark:text-slate-400 mt-0.5 text-[15px]">Welcome back, {user?.full_name || "user"}</p>
+          <div className="min-w-0">
+            <h1 className="text-4xl sm:text-5xl leading-[1.05] font-bold tracking-tight text-slate-900 dark:text-white">
+              My Dashboard
+            </h1>
+            <p className="text-slate-500 dark:text-slate-400 mt-0.5 text-sm sm:text-[15px] truncate">
+              Welcome back, {user?.full_name || "user"}
+            </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full lg:w-auto">
           <Button
             variant={editing ? "default" : "outline"}
-            className="h-10 px-4 text-[14px]"
+            className="h-10 px-3 sm:px-4 text-[14px] col-span-1"
             onClick={() => setEditing((v) => !v)}
           >
             <SlidersHorizontal className="w-4 h-4 mr-2" />
-            {editing ? "Done Editing" : "Customize"}
+            <span className="hidden sm:inline">{editing ? "Done Editing" : "Customize"}</span>
+            <span className="sm:hidden">{editing ? "Done" : "Edit"}</span>
           </Button>
-          <Button className="h-10 px-4 text-[14px]" onClick={() => setShowAddWidget(true)}>
+          <Button className="h-10 px-3 sm:px-4 text-[14px] col-span-1" onClick={() => setShowAddWidget(true)}>
             <Plus className="w-4 h-4 mr-1.5" />
-            Add Widget
+            <span className="hidden sm:inline">Add Widget</span>
+            <span className="sm:hidden">Add</span>
           </Button>
         </div>
       </div>

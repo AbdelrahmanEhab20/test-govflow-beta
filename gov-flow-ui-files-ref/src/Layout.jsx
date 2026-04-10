@@ -164,6 +164,21 @@ export default function Layout({ children, currentPageName }) {
     return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
   };
 
+  const resolveMediaUrl = (url) => {
+    if (!url) return "";
+    if (/^https?:\/\//i.test(url)) return url;
+    if (url.startsWith('/')) {
+      const apiBase = import.meta.env.VITE_API_BASE_URL;
+      if (!apiBase) return url;
+      try {
+        return new URL(url, apiBase).toString();
+      } catch {
+        return url;
+      }
+    }
+    return url;
+  };
+
   const effectiveRole = activeRole || user?.role || null;
   const { canAccessPage } = useRbac(effectiveRole);
   const availableSwitchRoles = getAvailableSwitchRoles(user?.role);
@@ -218,7 +233,7 @@ export default function Layout({ children, currentPageName }) {
             <div className="flex items-center gap-3">
             {logoUrl ? (
               <img
-                src={logoUrl}
+                src={resolveMediaUrl(logoUrl)}
                 alt={`${companyName} logo`}
                 className="w-10 h-10 rounded-xl object-cover border border-slate-200"
               />
@@ -315,7 +330,7 @@ export default function Layout({ children, currentPageName }) {
               <DropdownMenuTrigger asChild>
                 <button className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
                   <Avatar className="w-9 h-9">
-                    <AvatarImage src={user?.avatar_url} />
+                    <AvatarImage src={resolveMediaUrl(user?.avatar_url)} />
                     <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-500 text-white text-sm">
                       {getInitials(user?.full_name)}
                     </AvatarFallback>
