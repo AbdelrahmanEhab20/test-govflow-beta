@@ -20,16 +20,16 @@ export default function CalendarWeekView({ currentDate, tasksByDate, onDateSelec
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-7 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-7 gap-3">
         {weekDays.map((day) => {
           const dateKey = format(day, 'yyyy-MM-dd');
           const dayTasks = tasksByDate[dateKey] || [];
 
           return (
-            <Card key={dateKey} className="p-3 min-h-[200px] flex flex-col">
+            <Card key={dateKey} className="p-3 min-h-[180px] flex flex-col dark:bg-slate-800 dark:border-slate-700">
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <p className="text-sm font-medium text-slate-900">
+                  <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
                     {format(day, 'EEE')}
                   </p>
                   <p className="text-lg font-bold text-blue-600">
@@ -38,7 +38,7 @@ export default function CalendarWeekView({ currentDate, tasksByDate, onDateSelec
                 </div>
               </div>
 
-              <div className="flex-1 space-y-1 overflow-y-auto">
+              <div className="flex-1 space-y-1 overflow-y-auto min-h-0">
                 {dayTasks.map((task) => (
                   <Link
                     key={task.id}

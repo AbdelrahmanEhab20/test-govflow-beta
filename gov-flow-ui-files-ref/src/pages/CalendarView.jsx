@@ -124,32 +124,32 @@ export default function CalendarView() {
   };
 
   return (
-    <div className="p-6 lg:p-8 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-950 min-h-screen">
+    <div className="p-3 sm:p-4 lg:p-8 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-950 min-h-screen">
       {/* Header */}
       <div className="flex flex-col gap-4 mb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
           <div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Calendar</h1>
             <p className="text-slate-500 dark:text-slate-400 mt-1">View tasks by due date</p>
           </div>
           
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={navigateToday}>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" size="sm" onClick={navigateToday} className="shrink-0">
               Today
             </Button>
-            <div className="flex items-center border rounded-lg">
-              <Button variant="ghost" size="icon" onClick={navigatePrev}>
+            <div className="flex items-center border rounded-lg min-w-0 flex-1 sm:flex-none">
+              <Button variant="ghost" size="icon" onClick={navigatePrev} className="shrink-0">
                 <ChevronLeft className="w-4 h-4" />
               </Button>
-              <span className="px-4 font-medium min-w-[140px] text-center">
+              <span className="px-3 sm:px-4 font-medium min-w-0 sm:min-w-[140px] text-center flex-1 text-sm sm:text-base truncate">
                 {format(view === 'month' ? currentMonth : selectedDate || currentMonth, view === 'month' ? 'MMMM yyyy' : 'MMMM d, yyyy')}
               </span>
-              <Button variant="ghost" size="icon" onClick={navigateNext}>
+              <Button variant="ghost" size="icon" onClick={navigateNext} className="shrink-0">
                 <ChevronRight className="w-4 h-4" />
               </Button>
             </div>
 
-            <div className="flex items-center border rounded-lg ml-2">
+            <div className="flex items-center border rounded-lg">
               <Button
                 variant={view === 'month' ? 'default' : 'ghost'}
                 size="icon"
@@ -189,8 +189,9 @@ export default function CalendarView() {
             {/* Day Headers */}
             <div className="grid grid-cols-7 bg-slate-50 dark:bg-slate-700 border-b dark:border-slate-600">
               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                <div key={day} className="p-3 text-center text-sm font-medium text-slate-600 dark:text-slate-300">
-                  {day}
+                <div key={day} className="p-2 sm:p-3 text-center text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-300">
+                  <span className="hidden sm:inline">{day}</span>
+                  <span className="sm:hidden">{day.slice(0, 1)}</span>
                 </div>
               ))}
             </div>
@@ -209,7 +210,7 @@ export default function CalendarView() {
                     key={idx}
                     onClick={() => setSelectedDate(day)}
                     className={`
-                      min-h-[100px] p-2 border-b border-r dark:border-slate-600 cursor-pointer transition-colors
+                      min-h-[84px] sm:min-h-[100px] p-1.5 sm:p-2 border-b border-r dark:border-slate-600 cursor-pointer transition-colors
                       ${!isCurrentMonth ? 'bg-slate-50 dark:bg-slate-700 text-slate-400 dark:text-slate-500' : 'hover:bg-slate-50 dark:hover:bg-slate-700'}
                       ${isSelected ? 'bg-blue-50 dark:bg-blue-900/30 ring-2 ring-blue-500 ring-inset' : ''}
                     `}
