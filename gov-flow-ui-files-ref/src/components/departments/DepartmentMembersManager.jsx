@@ -158,8 +158,8 @@ export default function DepartmentMembersManager({
         <h4 className="font-semibold text-slate-900 dark:text-white mb-3">Add Members</h4>
         
         {/* Search Input */}
-        <div className="relative mb-3">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+        <div className="relative mb-3 isolate">
+          <Search className="pointer-events-none absolute inset-y-0 left-3 my-auto w-4 h-4 text-slate-400" />
           <Input
             placeholder="Search by name, title, or email..."
             value={searchQuery}

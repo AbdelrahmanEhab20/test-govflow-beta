@@ -85,8 +85,8 @@ export default function AssignTaskDialog({ targetUser }) {
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <div className="relative isolate">
+            <Search className="pointer-events-none absolute inset-y-0 left-3 my-auto w-4 h-4 text-slate-400" />
             <Input
               placeholder="Search tasks..."
               value={searchQuery}

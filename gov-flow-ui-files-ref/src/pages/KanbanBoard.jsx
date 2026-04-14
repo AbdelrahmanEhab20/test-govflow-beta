@@ -263,8 +263,8 @@ export default function KanbanBoard() {
           
           {/* Search and Filters */}
           <div className="flex gap-3 flex-wrap items-center">
-            <div className="relative flex-1 min-w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <div className="relative flex-1 min-w-64 isolate">
+              <Search className="pointer-events-none absolute inset-y-0 left-3 my-auto w-4 h-4 text-slate-400" />
               <Input
                 placeholder="Search tasks..."
                 value={searchQuery}

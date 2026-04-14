@@ -458,8 +458,8 @@ export default function Layout({ children, currentPageName }) {
                 <Menu className="w-5 h-5" />
               </Button>
               
-              <div className="hidden md:flex relative w-80">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
+              <div className="hidden md:flex relative w-80 isolate">
+                <Search className="pointer-events-none absolute inset-y-0 left-3 my-auto w-4 h-4 text-slate-400 dark:text-slate-500" />
                 <Input
                   placeholder="Search tasks, emails..."
                   value={searchQuery}
