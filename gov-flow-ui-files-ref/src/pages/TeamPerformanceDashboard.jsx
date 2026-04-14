@@ -188,6 +188,41 @@ export default function TeamPerformanceDashboard() {
     departmentToSector,
   ]);
 
+  const displayedTeamMemberCount = useMemo(() => {
+    if (teamMembers.length > 0) return teamMembers.length;
+
+    const userIds = new Set(users.map((u) => u.id));
+    const usersByName = new Map(
+      users.map((u) => [String(u.full_name || '').trim().toLowerCase(), u.id]),
+    );
+    const participantIds = new Set();
+
+    for (const initiative of filteredInitiatives) {
+      if (initiative?.lead_user_id && userIds.has(initiative.lead_user_id)) {
+        participantIds.add(initiative.lead_user_id);
+      } else if (initiative?.lead_user_name) {
+        const mappedLead = usersByName.get(String(initiative.lead_user_name).trim().toLowerCase());
+        if (mappedLead) participantIds.add(mappedLead);
+      }
+
+      if (Array.isArray(initiative?.support_users)) {
+        for (const supportId of initiative.support_users) {
+          if (supportId && userIds.has(supportId)) participantIds.add(supportId);
+        }
+      }
+
+      if (Array.isArray(initiative?.support_user_names)) {
+        for (const supportName of initiative.support_user_names) {
+          const mappedSupport = usersByName.get(String(supportName || '').trim().toLowerCase());
+          if (mappedSupport) participantIds.add(mappedSupport);
+        }
+      }
+    }
+
+    if (participantIds.size > 0) return participantIds.size;
+    return users.length;
+  }, [teamMembers, users, filteredInitiatives]);
+
   const handleResetFilters = () => {
     setSelectedDepartment('');
     setSelectedSector('');
@@ -316,7 +351,7 @@ export default function TeamPerformanceDashboard() {
               <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Departments</p>
             </div>
             <div>
-              <p className="text-3xl font-bold text-slate-900 dark:text-white">{teamMembers.length}</p>
+              <p className="text-3xl font-bold text-slate-900 dark:text-white">{displayedTeamMemberCount}</p>
               <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Team Members</p>
             </div>
             <div>
