@@ -320,6 +320,7 @@ export default function KanbanBoard() {
                    <KanbanColumn
                      stage={stage}
                      tasks={getTasksByStage(stage.id)}
+                     users={users}
                      provided={provided}
                      snapshot={snapshot}
                      getUserName={getUserName}

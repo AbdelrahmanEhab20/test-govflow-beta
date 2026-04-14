@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import KanbanTaskCard from './KanbanTaskCard';
 
-export default function KanbanColumn({ stage, tasks, provided, snapshot, getUserName, canDragTask, currentUser }) {
+export default function KanbanColumn({ stage, tasks, users = [], provided, snapshot, getUserName, canDragTask, currentUser }) {
   const getStageColor = (color) => {
     const colors = {
       blue: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800',
@@ -67,6 +67,7 @@ export default function KanbanColumn({ stage, tasks, provided, snapshot, getUser
                    >
                      <KanbanTaskCard
                        task={task}
+                       users={users}
                        getUserName={getUserName}
                        isDragging={snapshot.isDragging}
                        isDraggable={isDraggable}

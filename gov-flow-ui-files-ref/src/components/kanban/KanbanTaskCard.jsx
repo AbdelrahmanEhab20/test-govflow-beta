@@ -3,11 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Calendar, AlertCircle } from 'lucide-react';
 import { format, isPast, isToday, isTomorrow } from 'date-fns';
+import UserAvatar from '@/components/shared/UserAvatar';
 
-export default function KanbanTaskCard({ task, getUserName, isDragging, isDraggable, currentUser }) {
+export default function KanbanTaskCard({ task, users = [], getUserName, isDragging, isDraggable, currentUser }) {
   const navigate = useNavigate();
 
   const getPriorityColor = (priority) => {
@@ -43,10 +43,9 @@ export default function KanbanTaskCard({ task, getUserName, isDragging, isDragga
   const isOverdue = task.due_date && isPast(new Date(task.due_date)) && task.status !== 'completed';
   const isUrgent = task.priority === 'urgent' || task.priority === 'high';
 
-  const getInitials = (name) => {
-    if (!name) return '?';
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-  };
+  const leadUser = users.find((u) => u.id === task.lead_user_id) || null;
+  const leadDisplayName = leadUser?.full_name || task.lead_user_name || getUserName?.(task.lead_user_id) || 'Unassigned';
+  const leadDisplayEmail = leadUser?.email || '';
 
   return (
     <Card
@@ -118,16 +117,16 @@ export default function KanbanTaskCard({ task, getUserName, isDragging, isDragga
       <div className="flex items-center justify-between">
         {task.lead_user_id && (
           <div className="flex items-center gap-2 min-w-0 flex-1">
-            <Avatar className="w-6 h-6">
-              <AvatarFallback className="text-xs bg-blue-500 text-white">
-                {getInitials(task.lead_user_name)}
-              </AvatarFallback>
-            </Avatar>
+            <UserAvatar
+              user={leadUser || { full_name: leadDisplayName, email: leadDisplayEmail }}
+              size="xs"
+              showTooltip={false}
+            />
             <span
               className="text-xs text-slate-600 dark:text-slate-400 truncate block max-w-[120px]"
-              title={task.lead_user_name || ''}
+              title={leadDisplayName}
             >
-              {task.lead_user_name}
+              {leadDisplayName}
             </span>
           </div>
         )}
