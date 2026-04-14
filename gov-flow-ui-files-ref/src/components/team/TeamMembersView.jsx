@@ -13,6 +13,21 @@ export default function TeamMembersView({ members }) {
     return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
   };
 
+  const resolveMediaUrl = (url) => {
+    if (!url) return "";
+    if (/^https?:\/\//i.test(url)) return url;
+    if (url.startsWith('/')) {
+      const apiBase = import.meta.env.VITE_API_BASE_URL;
+      if (!apiBase) return url;
+      try {
+        return new URL(url, apiBase).toString();
+      } catch {
+        return url;
+      }
+    }
+    return url;
+  };
+
   if (viewMode === 'list') {
     return (
       <div>
@@ -31,7 +46,7 @@ export default function TeamMembersView({ members }) {
               className="p-4 flex items-center gap-4 border border-slate-200/80 dark:border-slate-700 rounded-xl shadow-sm hover:shadow-md transition-all"
             >
               <Avatar className="w-11 h-11">
-                <AvatarImage src={member.avatar_url} />
+                <AvatarImage src={resolveMediaUrl(member.avatar_url || member.avatar || member.photo_url || member.image_url || member.profile_image)} />
                 <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-500 text-white">
                   {getInitials(member.name)}
                 </AvatarFallback>
@@ -69,7 +84,7 @@ export default function TeamMembersView({ members }) {
           >
             <div className="flex items-start gap-3">
               <Avatar className="w-12 h-12 ring-2 ring-slate-100 dark:ring-slate-700">
-                <AvatarImage src={member.avatar_url} />
+                <AvatarImage src={resolveMediaUrl(member.avatar_url || member.avatar || member.photo_url || member.image_url || member.profile_image)} />
                 <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-500 text-white">
                   {getInitials(member.name)}
                 </AvatarFallback>

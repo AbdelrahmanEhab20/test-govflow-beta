@@ -40,6 +40,21 @@ export default function DepartmentMembersManager({
     return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
   };
 
+  const resolveMediaUrl = (url) => {
+    if (!url) return "";
+    if (/^https?:\/\//i.test(url)) return url;
+    if (url.startsWith('/')) {
+      const apiBase = import.meta.env.VITE_API_BASE_URL;
+      if (!apiBase) return url;
+      try {
+        return new URL(url, apiBase).toString();
+      } catch {
+        return url;
+      }
+    }
+    return url;
+  };
+
   const handleAddMember = (memberId) => {
     setSelectedToAdd([...selectedToAdd, memberId]);
   };
@@ -101,7 +116,7 @@ export default function DepartmentMembersManager({
               <Card key={member.id} className="p-3 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700">
                 <div className="flex items-center gap-3 flex-1">
                   <Avatar className="w-9 h-9">
-                    <AvatarImage src={member.avatar_url} />
+                    <AvatarImage src={resolveMediaUrl(member.avatar_url || member.avatar || member.photo_url || member.image_url || member.profile_image)} />
                     <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-500 text-white text-xs">
                       {getInitials(member.name)}
                     </AvatarFallback>
@@ -173,7 +188,7 @@ export default function DepartmentMembersManager({
                 >
                   <div className="flex items-center gap-3 flex-1">
                     <Avatar className="w-9 h-9">
-                      <AvatarImage src={member.avatar_url} />
+                      <AvatarImage src={resolveMediaUrl(member.avatar_url || member.avatar || member.photo_url || member.image_url || member.profile_image)} />
                       <AvatarFallback className="bg-gradient-to-br from-green-500 to-emerald-500 text-white text-xs">
                         {getInitials(member.name)}
                       </AvatarFallback>

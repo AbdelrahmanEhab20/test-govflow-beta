@@ -8,6 +8,8 @@ import {
 } from "@/components/ui/tooltip";
 
 export default function UserAvatar({ user, size = "default", showTooltip = true }) {
+  const displayName = user?.full_name || user?.name || user?.user_name || "";
+
   const getInitials = (name) => {
     if (!name) return "?";
     return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
@@ -43,7 +45,7 @@ export default function UserAvatar({ user, size = "default", showTooltip = true 
     <Avatar className={sizeClasses[size]}>
       <AvatarImage src={avatarUrl} />
       <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-500 text-white">
-        {getInitials(user?.full_name || user?.email)}
+        {getInitials(displayName || user?.email)}
       </AvatarFallback>
     </Avatar>
   );
@@ -57,7 +59,7 @@ export default function UserAvatar({ user, size = "default", showTooltip = true 
           {avatarComponent}
         </TooltipTrigger>
         <TooltipContent>
-          <p className="font-medium">{user?.full_name || "Unknown"}</p>
+          <p className="font-medium">{displayName || "Unknown"}</p>
           {user?.email && <p className="text-xs text-slate-500">{user.email}</p>}
         </TooltipContent>
       </Tooltip>

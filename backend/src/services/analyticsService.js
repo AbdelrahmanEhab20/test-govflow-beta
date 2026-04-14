@@ -34,13 +34,18 @@ function computeLeaderboard({ initiatives, teamMembers, users, departments, star
     if (m?.name) memberInfoMap[m.name] = m;
   }
   const usersById = {};
+  const usersByName = {};
   for (const u of users || []) {
     if (u?.id) usersById[u.id] = u;
+    if (u?.full_name) usersByName[String(u.full_name).trim().toLowerCase()] = u;
   }
   const resolveMemberProfile = (taskOrMember = {}) => {
     const fromTeam = taskOrMember?.name ? memberInfoMap[taskOrMember.name] : null;
     const fromTaskLead = taskOrMember?.lead_user_name ? memberInfoMap[taskOrMember.lead_user_name] : null;
-    const fromUser = taskOrMember?.lead_user_id ? usersById[taskOrMember.lead_user_id] : null;
+    const fromUserById = taskOrMember?.lead_user_id ? usersById[taskOrMember.lead_user_id] : null;
+    const byNameKey = String(taskOrMember?.name || taskOrMember?.lead_user_name || '').trim().toLowerCase();
+    const fromUserByName = byNameKey ? usersByName[byNameKey] : null;
+    const fromUser = fromUserById || fromUserByName || null;
     const source = fromTeam || fromTaskLead || {};
     const rawDepartment =
       source.department_name ||
@@ -55,6 +60,7 @@ function computeLeaderboard({ initiatives, teamMembers, users, departments, star
       job_title: source.job_title || fromUser?.position || '',
       department: departmentName,
       sector: sectorName,
+      avatar_url: fromUser?.avatar_url || source.avatar_url || '',
     };
   };
 
@@ -80,6 +86,7 @@ function computeLeaderboard({ initiatives, teamMembers, users, departments, star
       job_title: profile.job_title,
       department: profile.department,
       sector: profile.sector,
+      avatar_url: profile.avatar_url,
       total: 0,
       completed: 0,
       in_progress: 0,
@@ -99,6 +106,7 @@ function computeLeaderboard({ initiatives, teamMembers, users, departments, star
         job_title: profile.job_title,
         department: profile.department,
         sector: profile.sector,
+        avatar_url: profile.avatar_url,
         total: 0,
         completed: 0,
         in_progress: 0,

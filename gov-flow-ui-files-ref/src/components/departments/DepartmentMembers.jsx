@@ -63,6 +63,21 @@ export default function DepartmentMembers({ departmentId }) {
     return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
   };
 
+  const resolveMediaUrl = (url) => {
+    if (!url) return "";
+    if (/^https?:\/\//i.test(url)) return url;
+    if (url.startsWith('/')) {
+      const apiBase = import.meta.env.VITE_API_BASE_URL;
+      if (!apiBase) return url;
+      try {
+        return new URL(url, apiBase).toString();
+      } catch {
+        return url;
+      }
+    }
+    return url;
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -111,7 +126,7 @@ export default function DepartmentMembers({ departmentId }) {
               >
                 <div className="flex items-center gap-3">
                   <Avatar className="h-10 w-10">
-                    <AvatarImage src={member.avatar_url} />
+                    <AvatarImage src={resolveMediaUrl(member.avatar_url || member.avatar || member.photo_url || member.image_url || member.profile_image)} />
                     <AvatarFallback className="bg-blue-500 text-white">
                       {getInitials(member.full_name)}
                     </AvatarFallback>

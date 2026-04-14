@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Users, ArrowUpDown } from "lucide-react";
 import RankBadge from "./RankBadge";
+import UserAvatar from "@/components/shared/UserAvatar";
 
 const SORT_OPTIONS = [
   { label: "Score",           value: "score" },
@@ -12,19 +12,6 @@ const SORT_OPTIONS = [
   { label: "Tasks Completed", value: "completed" },
   { label: "Avg. Progress",   value: "avg_completion_percent" },
   { label: "On-Time Rate",    value: "on_time_rate" },
-];
-
-function getInitials(name) {
-  return (name || "?").split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
-}
-
-const COLOR_PALETTE = [
-  "from-blue-500 to-indigo-500",
-  "from-purple-500 to-pink-500",
-  "from-green-500 to-teal-500",
-  "from-orange-500 to-red-500",
-  "from-yellow-500 to-orange-500",
-  "from-cyan-500 to-blue-500",
 ];
 
 export default function MembersLeaderboard({ members = [] }) {
@@ -90,11 +77,17 @@ export default function MembersLeaderboard({ members = [] }) {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <Avatar className="w-8 h-8 flex-shrink-0">
-                          <AvatarFallback className={`bg-gradient-to-br ${COLOR_PALETTE[idx % COLOR_PALETTE.length]} text-white text-xs font-semibold`}>
-                            {getInitials(m.name)}
-                          </AvatarFallback>
-                        </Avatar>
+                        <UserAvatar
+                          user={{
+                            full_name: m.name,
+                            email: m.email,
+                            avatar_url: m.avatar_url,
+                            avatar: m.avatar,
+                            photo_url: m.photo_url,
+                          }}
+                          size="sm"
+                          showTooltip={false}
+                        />
                         <div>
                           <p className="font-medium text-slate-900 dark:text-white">{m.name}</p>
                           <p className="text-xs text-slate-500 dark:text-slate-400">{m.job_title || m.department}</p>
