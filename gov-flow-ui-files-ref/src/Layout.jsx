@@ -243,24 +243,16 @@ export default function Layout({ children, currentPageName }) {
 
       {/* Sidebar */}
       <aside className={`
-        fixed top-0 left-0 z-50 h-full w-72 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800
+        fixed top-0 left-0 z-50 h-full bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800
         transform transition-transform duration-300 ease-in-out
+        w-72 ${desktopSidebarOpen ? 'md:w-72' : 'md:w-20'}
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-        ${desktopSidebarOpen ? 'md:translate-x-0' : 'md:-translate-x-full'}
+        md:translate-x-0
       `}>
-        <Button
-          variant="outline"
-          size="icon"
-          className="hidden md:flex absolute -right-3 top-20 h-7 w-7 rounded-full bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 shadow-sm"
-          onClick={() => setDesktopSidebarOpen(false)}
-          aria-label="Collapse sidebar"
-        >
-          <ChevronLeft className="w-4 h-4" />
-        </Button>
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="h-16 flex items-center justify-between px-6 border-b border-slate-100 dark:border-slate-700">
-            <div className="flex items-center gap-3">
+          <div className={`h-16 flex items-center justify-between border-b border-slate-100 dark:border-slate-700 ${desktopSidebarOpen ? 'px-6' : 'px-3 md:px-4'}`}>
+            <div className={`flex items-center gap-3 ${desktopSidebarOpen ? '' : 'md:justify-center md:w-full'}`}>
             {logoUrl ? (
               <img
                 src={resolveMediaUrl(logoUrl)}
@@ -272,7 +264,7 @@ export default function Layout({ children, currentPageName }) {
                 <span className="text-white font-bold text-lg">{companyInitials}</span>
               </div>
             )}
-            <div>
+            <div className={`${desktopSidebarOpen ? 'block' : 'hidden'}`}>
               <h1 className="font-semibold text-slate-900 dark:text-white text-sm">{sidebarTitle}</h1>
               <p className="text-xs text-slate-500 dark:text-slate-400">{tagline}</p>
             </div>
@@ -289,7 +281,7 @@ export default function Layout({ children, currentPageName }) {
 
           {/* Navigation */}
           <ScrollArea className="flex-1 py-4">
-            <nav className="px-3 space-y-1">
+            <nav className={`space-y-1 ${desktopSidebarOpen ? 'px-3' : 'px-2'}`}>
               {navItems.map((item) => {
                 const isActive = currentPageName === item.page;
                 const Icon = item.icon;
@@ -301,19 +293,25 @@ export default function Layout({ children, currentPageName }) {
                   <Link
                     key={item.page}
                     to={createPageUrl(item.page)}
+                    title={!desktopSidebarOpen ? item.name : undefined}
                     className={`
-                      sidebar-item flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium
+                      sidebar-item flex items-center rounded-lg text-sm font-medium
+                      ${desktopSidebarOpen ? 'gap-3 px-4 py-2.5' : 'justify-center px-2 py-2.5'}
                       ${isActive 
                         ? 'bg-blue-50 dark:bg-slate-700 text-blue-700 dark:text-blue-400' 
                         : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white'}
                     `}
                   >
                     <Icon className={`w-5 h-5 ${isActive ? 'text-blue-600' : 'text-slate-400'}`} />
-                    <span>{item.name}</span>
+                    {desktopSidebarOpen && <span>{item.name}</span>}
                     {item.page === 'EmailInbox' && newEmails.length > 0 && (
-                      <Badge className="ml-auto bg-red-500 text-white text-xs px-2">
-                        {newEmails.length}
-                      </Badge>
+                      desktopSidebarOpen ? (
+                        <Badge className="ml-auto bg-red-500 text-white text-xs px-2">
+                          {newEmails.length}
+                        </Badge>
+                      ) : (
+                        <span className="absolute right-1.5 top-1.5 w-2 h-2 rounded-full bg-red-500" />
+                      )
                     )}
                   </Link>
                 );
@@ -321,9 +319,9 @@ export default function Layout({ children, currentPageName }) {
 
               {(canAccessPage(effectiveRole, 'TeamPerformanceDashboard') || canAccessPage(effectiveRole, 'DepartmentManagement') || canAccessPage(effectiveRole, 'RoutingRules')) && (
                 <>
-                  <div className="pt-4 pb-2 px-4">
+                  <div className={`pt-4 pb-2 ${desktopSidebarOpen ? 'px-4' : 'px-2'}`}>
                     <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                      Administration
+                      {desktopSidebarOpen ? 'Administration' : 'Adm'}
                     </span>
                   </div>
                   {adminItems.map((item) => {
@@ -337,15 +335,17 @@ export default function Layout({ children, currentPageName }) {
                       <Link
                         key={item.page}
                         to={createPageUrl(item.page)}
+                        title={!desktopSidebarOpen ? item.name : undefined}
                         className={`
-                          sidebar-item flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium
+                          sidebar-item flex items-center rounded-lg text-sm font-medium
+                          ${desktopSidebarOpen ? 'gap-3 px-4 py-2.5' : 'justify-center px-2 py-2.5'}
                           ${isActive 
                             ? 'bg-blue-50 dark:bg-slate-700 text-blue-700 dark:text-blue-400' 
                             : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white'}
                         `}
                       >
                         <Icon className={`w-5 h-5 ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500'}`} />
-                        <span>{item.name}</span>
+                        {desktopSidebarOpen && <span>{item.name}</span>}
                       </Link>
                     );
                   })}
@@ -355,21 +355,25 @@ export default function Layout({ children, currentPageName }) {
           </ScrollArea>
 
           {/* User section */}
-          <div className="p-4 border-t border-slate-100 dark:border-slate-700">
+          <div className={`border-t border-slate-100 dark:border-slate-700 ${desktopSidebarOpen ? 'p-4' : 'p-2 md:p-3'}`}>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                <button title={!desktopSidebarOpen ? (user?.full_name || 'User') : undefined} className={`w-full flex items-center rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors ${desktopSidebarOpen ? 'gap-3 p-2' : 'justify-center p-2'}`}>
                   <Avatar className="w-9 h-9">
                     <AvatarImage src={resolveMediaUrl(user?.avatar_url)} />
                     <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-500 text-white text-sm">
                       {getInitials(user?.full_name)}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="flex-1 text-left">
-                    <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{user?.full_name}</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 capitalize">{effectiveRole?.replace(/_/g, ' ') || 'User'}</p>
-                  </div>
-                  <ChevronDown className="w-4 h-4 text-slate-400 dark:text-slate-500" />
+                  {desktopSidebarOpen && (
+                    <>
+                      <div className="flex-1 text-left">
+                        <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{user?.full_name}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 capitalize">{effectiveRole?.replace(/_/g, ' ') || 'User'}</p>
+                      </div>
+                      <ChevronDown className="w-4 h-4 text-slate-400 dark:text-slate-500" />
+                    </>
+                  )}
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
@@ -407,11 +411,23 @@ export default function Layout({ children, currentPageName }) {
         </div>
       </aside>
 
+      {desktopSidebarOpen && (
+        <Button
+          variant="outline"
+          size="icon"
+          className="hidden md:flex fixed left-[275px] top-20 z-[70] h-7 w-7 rounded-full bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 shadow-sm"
+          onClick={() => setDesktopSidebarOpen(false)}
+          aria-label="Collapse sidebar"
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </Button>
+      )}
+
       {!desktopSidebarOpen && (
         <Button
           variant="outline"
           size="icon"
-          className="hidden md:flex fixed left-3 top-20 z-40 h-8 w-8 rounded-full bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 shadow-sm"
+          className="hidden md:flex fixed left-[84px] top-20 z-[70] h-8 w-8 rounded-full bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 shadow-sm"
           onClick={() => setDesktopSidebarOpen(true)}
           aria-label="Expand sidebar"
         >
@@ -420,7 +436,7 @@ export default function Layout({ children, currentPageName }) {
       )}
 
       {/* Main content */}
-      <div className={`${desktopSidebarOpen ? 'md:pl-72' : 'md:pl-0'} transition-all duration-300`}>
+      <div className={`${desktopSidebarOpen ? 'md:pl-72' : 'md:pl-20'} transition-all duration-300`}>
         {/* Top bar */}
         <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30 glass-effect">
           <div className="h-full flex items-center justify-between px-4 lg:px-6">
