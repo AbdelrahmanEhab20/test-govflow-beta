@@ -423,7 +423,7 @@ export default function Layout({ children, currentPageName }) {
         <Button
           variant="outline"
           size="icon"
-          className="hidden md:flex fixed left-[275px] top-20 z-[70] h-7 w-7 rounded-full bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 shadow-sm"
+          className="hidden md:flex fixed left-[275px] top-20 z-[30] h-7 w-7 rounded-full bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 shadow-sm"
           onClick={() => setDesktopSidebarOpen(false)}
           aria-label="Collapse sidebar"
         >
@@ -435,7 +435,7 @@ export default function Layout({ children, currentPageName }) {
         <Button
           variant="outline"
           size="icon"
-          className="hidden md:flex fixed left-[84px] top-20 z-[70] h-8 w-8 rounded-full bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 shadow-sm"
+          className="hidden md:flex fixed left-[84px] top-20 z-[30] h-8 w-8 rounded-full bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 shadow-sm"
           onClick={() => setDesktopSidebarOpen(true)}
           aria-label="Expand sidebar"
         >
