@@ -291,7 +291,7 @@ export default function TeamPerformanceDashboard() {
 
         {/* Search and Filters */}
         <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1 sm:max-w-md isolate">
+          <div className="relative flex-1 sm:max-w-md isolate self-start">
             <Search className="pointer-events-none absolute inset-y-0 left-3 my-auto w-4 h-4 text-slate-400" />
             <Input
               placeholder="Search initiatives..."

@@ -53,7 +53,7 @@ export default function TaskFilters({
     <div className="space-y-4">
       {/* Search and Quick Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1 isolate">
+        <div className="relative flex-1 isolate self-start">
           <Search className="pointer-events-none absolute inset-y-0 left-3 my-auto w-4 h-4 text-slate-400" />
           <Input
             placeholder="Search tasks..."
