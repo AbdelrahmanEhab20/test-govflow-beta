@@ -14,6 +14,8 @@ import {
   Bell,
   Menu,
   X,
+  ChevronLeft,
+  ChevronRight,
   ChevronDown,
   LogOut,
   User,
@@ -76,6 +78,7 @@ const adminItems = [
 
 export default function Layout({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [notificationPanelOpen, setNotificationPanelOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -125,6 +128,15 @@ export default function Layout({ children, currentPageName }) {
   };
 
   useEffect(() => {
+    try {
+      const stored = localStorage.getItem('desktopSidebarOpen');
+      if (stored === 'false') setDesktopSidebarOpen(false);
+    } catch {
+      // Ignore storage access issues.
+    }
+  }, []);
+
+  useEffect(() => {
     if (user?.role) {
       const storedRole = localStorage.getItem('activeRole');
       const switchableRoles = getAvailableSwitchRoles(user.role).map((roleOption) => roleOption.value);
@@ -141,6 +153,14 @@ export default function Layout({ children, currentPageName }) {
       setShowOnboarding(true);
     }
   }, [user?.id, user?.role, user?.onboarding_completed, activeRole]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('desktopSidebarOpen', String(desktopSidebarOpen));
+    } catch {
+      // Ignore storage access issues.
+    }
+  }, [desktopSidebarOpen]);
 
   const { data: notifications = [] } = useQuery({
     queryKey: ['notifications', user?.id],
@@ -225,8 +245,18 @@ export default function Layout({ children, currentPageName }) {
       <aside className={`
         fixed top-0 left-0 z-50 h-full w-72 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800
         transform transition-transform duration-300 ease-in-out
-        md:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        ${desktopSidebarOpen ? 'md:translate-x-0' : 'md:-translate-x-full'}
       `}>
+        <Button
+          variant="outline"
+          size="icon"
+          className="hidden md:flex absolute -right-3 top-20 h-7 w-7 rounded-full bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 shadow-sm"
+          onClick={() => setDesktopSidebarOpen(false)}
+          aria-label="Collapse sidebar"
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </Button>
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="h-16 flex items-center justify-between px-6 border-b border-slate-100 dark:border-slate-700">
@@ -377,8 +407,20 @@ export default function Layout({ children, currentPageName }) {
         </div>
       </aside>
 
+      {!desktopSidebarOpen && (
+        <Button
+          variant="outline"
+          size="icon"
+          className="hidden md:flex fixed left-3 top-20 z-40 h-8 w-8 rounded-full bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 shadow-sm"
+          onClick={() => setDesktopSidebarOpen(true)}
+          aria-label="Expand sidebar"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </Button>
+      )}
+
       {/* Main content */}
-      <div className="md:pl-72">
+      <div className={`${desktopSidebarOpen ? 'md:pl-72' : 'md:pl-0'} transition-all duration-300`}>
         {/* Top bar */}
         <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30 glass-effect">
           <div className="h-full flex items-center justify-between px-4 lg:px-6">
