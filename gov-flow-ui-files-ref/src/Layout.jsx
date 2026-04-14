@@ -170,8 +170,16 @@ export default function Layout({ children, currentPageName }) {
   const unreadNotifications = (notifications || []).filter((n) => !n.is_read);
 
   const { data: newEmails = [] } = useQuery({
-    queryKey: ['newEmails'],
-    queryFn: () => listEmails({ status_in_system: 'new' }, '-received_at', 500),
+    queryKey: ['newEmails', user?.mailboxes],
+    queryFn: () => {
+      const activeMailbox = user?.mailboxes?.find((mailbox) => mailbox.isActive)?.email;
+      const query = {
+        status_in_system: 'new',
+        ...(activeMailbox ? { mailbox: activeMailbox } : {}),
+      };
+      return listEmails(query, '-received_at', 500);
+    },
+    enabled: !!user,
   });
 
   const handleLogout = () => {
