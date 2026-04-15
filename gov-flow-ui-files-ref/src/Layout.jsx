@@ -19,7 +19,6 @@ import {
   ChevronDown,
   LogOut,
   User,
-  Search,
   BarChart3,
   Users,
   Route,
@@ -36,7 +35,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import DarkModeToggle from "@/components/shared/DarkModeToggle";
@@ -79,7 +77,6 @@ const adminItems = [
 export default function Layout({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
   const [notificationPanelOpen, setNotificationPanelOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [activeRole, setActiveRole] = useState(null);
@@ -458,15 +455,6 @@ export default function Layout({ children, currentPageName }) {
                 <Menu className="w-5 h-5" />
               </Button>
               
-              <div className="hidden md:flex relative w-80 isolate">
-                <Search className="pointer-events-none absolute inset-y-0 left-3 my-auto w-4 h-4 text-slate-400 dark:text-slate-500" />
-                <Input
-                  placeholder="Search tasks, emails..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 bg-slate-50 dark:bg-slate-700 border-slate-200 dark:border-slate-600 focus:bg-white dark:focus:bg-slate-600 text-slate-900 dark:text-white dark:placeholder-slate-400"
-                />
-              </div>
             </div>
 
             <div className="flex items-center gap-2">
