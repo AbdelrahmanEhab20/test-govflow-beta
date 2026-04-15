@@ -16,14 +16,17 @@ import { Loader2, FileUp, Mail, CheckCircle2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export default function ImportContactsDialog() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [preview, setPreview] = useState(null);
+  const [selectedContactKeys, setSelectedContactKeys] = useState([]);
   const [importMethod, setImportMethod] = useState('file');
   const fileInputRef = React.useRef(null);
+  const getContactKey = (contact = {}) => String(contact.email || "").trim().toLowerCase();
   const {
     data: outlookStatus,
     isLoading: isLoadingOutlookStatus,
@@ -100,11 +103,15 @@ export default function ImportContactsDialog() {
         : (data?.imported || []);
 
       if (imported.length > 0) {
+        const normalized = imported
+          .map((contact) => ({ ...contact, email: String(contact.email || "").trim() }))
+          .filter((contact) => Boolean(contact.email));
         setPreview({
-          contacts: imported,
+          contacts: normalized,
           errors: data?.errors || [],
-          count: imported.length
+          count: normalized.length
         });
+        setSelectedContactKeys(Array.from(new Set(normalized.map((contact) => getContactKey(contact)))));
       } else {
         if (useNodeBackend) {
           startOutlookConnect();
@@ -179,10 +186,19 @@ export default function ImportContactsDialog() {
         errors: response.data.errors,
         count: response.data.count
       });
+      setSelectedContactKeys(
+        Array.from(
+          new Set((response.data.imported || []).map((contact) => getContactKey(contact)).filter(Boolean))
+        )
+      );
     } catch (error) {
       alert('Error reading file: ' + error.message);
     }
   };
+
+  const selectedContacts = (preview?.contacts || []).filter((contact) =>
+    selectedContactKeys.includes(getContactKey(contact))
+  );
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -337,9 +353,51 @@ export default function ImportContactsDialog() {
               </div>
 
               <div className="space-y-3 max-h-96 overflow-y-auto">
+                <div className="flex items-center justify-between rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      checked={
+                        preview.contacts.length > 0 && selectedContactKeys.length === preview.contacts.length
+                      }
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setSelectedContactKeys(
+                            Array.from(new Set(preview.contacts.map((contact) => getContactKey(contact)).filter(Boolean)))
+                          );
+                          return;
+                        }
+                        setSelectedContactKeys([]);
+                      }}
+                    />
+                    <span className="text-xs text-slate-700">
+                      Select all ({selectedContactKeys.length}/{preview.contacts.length})
+                    </span>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-xs"
+                    onClick={() => setSelectedContactKeys([])}
+                  >
+                    Clear
+                  </Button>
+                </div>
                 {preview.contacts.map((contact, idx) => (
                   <div key={idx} className="p-3 border border-slate-200 rounded-lg">
                     <div className="flex items-start justify-between gap-2">
+                      <Checkbox
+                        checked={selectedContactKeys.includes(getContactKey(contact))}
+                        onCheckedChange={(checked) => {
+                          const key = getContactKey(contact);
+                          if (!key) return;
+                          setSelectedContactKeys((prev) => {
+                            if (checked) return prev.includes(key) ? prev : [...prev, key];
+                            return prev.filter((existing) => existing !== key);
+                          });
+                        }}
+                        className="mt-0.5"
+                      />
                       <div className="flex-1">
                         <p className="font-medium text-sm">{contact.name}</p>
                         <p className="text-xs text-slate-500">{contact.email}</p>
@@ -386,8 +444,8 @@ export default function ImportContactsDialog() {
                   Cancel
                 </Button>
                 <Button
-                  onClick={() => bulkInviteMutation.mutate(preview.contacts)}
-                  disabled={bulkInviteMutation.isPending || preview.contacts.length === 0}
+                  onClick={() => bulkInviteMutation.mutate(selectedContacts)}
+                  disabled={bulkInviteMutation.isPending || selectedContacts.length === 0}
                 >
                   {bulkInviteMutation.isPending ? (
                     <>
@@ -395,7 +453,7 @@ export default function ImportContactsDialog() {
                       Inviting...
                     </>
                   ) : (
-                    "Invite All Contacts"
+                    `Invite Selected (${selectedContacts.length})`
                   )}
                 </Button>
               </div>
