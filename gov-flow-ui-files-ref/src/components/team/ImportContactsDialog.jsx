@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { listOutlookContacts, startOutlookConnect } from "@/api/outlookApi";
+import { getOutlookStatus, listOutlookContacts, startOutlookConnect } from "@/api/outlookApi";
+import { inviteUser } from "@/api/usersApi";
 import { useNodeBackend } from "@/api/nodeBackendClient";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -11,16 +12,54 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2, FileUp, Mail } from "lucide-react";
+import { Loader2, FileUp, Mail, CheckCircle2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/components/ui/use-toast";
 
 export default function ImportContactsDialog() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [preview, setPreview] = useState(null);
   const [importMethod, setImportMethod] = useState('file');
   const fileInputRef = React.useRef(null);
+  const {
+    data: outlookStatus,
+    isLoading: isLoadingOutlookStatus,
+    refetch: refetchOutlookStatus,
+  } = useQuery({
+    queryKey: ['outlookStatus'],
+    queryFn: () => getOutlookStatus(),
+    enabled: useNodeBackend,
+  });
+
+  React.useEffect(() => {
+    if (!open || !useNodeBackend) return;
+    const params = new URLSearchParams(window.location.search);
+    const connected = params.get('ms_connected');
+    const reason = params.get('reason');
+    if (!connected) return;
+
+    if (connected === '1') {
+      toast({
+        title: 'Outlook connected',
+        description: 'Your Outlook account is now connected. You can import contacts.',
+      });
+      refetchOutlookStatus();
+    } else if (connected === '0') {
+      toast({
+        variant: 'destructive',
+        title: 'Outlook connection failed',
+        description: reason || 'OAuth flow did not complete.',
+      });
+    }
+
+    params.delete('ms_connected');
+    params.delete('reason');
+    const newSearch = params.toString();
+    window.history.replaceState({}, '', `${window.location.pathname}${newSearch ? `?${newSearch}` : ''}`);
+  }, [open, refetchOutlookStatus, toast]);
 
   const importMutation = useMutation({
     mutationFn: async (vCardText) => {
@@ -76,6 +115,50 @@ export default function ImportContactsDialog() {
     },
     onError: (error) => {
       alert('Failed to import contacts: ' + error.message);
+    },
+  });
+
+  const bulkInviteMutation = useMutation({
+    mutationFn: async (contacts) => {
+      const uniqueContacts = Array.from(
+        new Map(
+          (contacts || [])
+            .filter((c) => c?.email)
+            .map((c) => [String(c.email).trim().toLowerCase(), c])
+        ).values()
+      );
+      const results = await Promise.allSettled(
+        uniqueContacts.map((contact) =>
+          inviteUser({
+            email: contact.email,
+            role: "user",
+            ...(contact.department ? { department: contact.department } : {}),
+            ...(contact.position ? { position: contact.position } : {}),
+          })
+        )
+      );
+      const succeeded = results.filter((r) => r.status === "fulfilled").length;
+      const failed = results.length - succeeded;
+      return { succeeded, failed, total: results.length };
+    },
+    onSuccess: ({ succeeded, failed, total }) => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      toast({
+        title: "Contacts invited",
+        description:
+          failed > 0
+            ? `${succeeded}/${total} contacts invited. ${failed} failed.`
+            : `${succeeded}/${total} contacts invited successfully.`,
+      });
+      setOpen(false);
+      setPreview(null);
+    },
+    onError: (error) => {
+      toast({
+        variant: "destructive",
+        title: "Invite failed",
+        description: error?.message || "Could not invite imported contacts.",
+      });
     },
   });
 
@@ -164,16 +247,33 @@ export default function ImportContactsDialog() {
                       Import contacts directly from your Outlook/Office 365 account
                     </p>
                   </div>
+                  {useNodeBackend && (
+                    <div
+                      className={`rounded-md border p-3 text-left ${
+                        outlookStatus?.connected
+                          ? "border-emerald-200 bg-emerald-50"
+                          : "border-amber-200 bg-amber-50"
+                      }`}
+                    >
+                      {isLoadingOutlookStatus ? (
+                        <p className="text-xs text-slate-600">Checking Outlook connection...</p>
+                      ) : outlookStatus?.connected ? (
+                        <div className="flex items-start gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 mt-0.5" />
+                          <div>
+                            <p className="text-xs font-medium text-emerald-800">Connected account</p>
+                            <p className="text-xs text-emerald-700">
+                              {outlookStatus?.mailbox?.email || "Outlook connected"}
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-amber-800">No Outlook account connected yet.</p>
+                      )}
+                    </div>
+                  )}
                   <Button 
-                    onClick={() => {
-                      if (useNodeBackend) {
-                        startOutlookConnect().catch((error) => {
-                          alert('Failed to start Outlook OAuth: ' + error.message);
-                        });
-                        return;
-                      }
-                      outlookImportMutation.mutate();
-                    }}
+                    onClick={() => outlookImportMutation.mutate()}
                     disabled={outlookImportMutation.isPending}
                     className="w-full"
                   >
@@ -185,10 +285,40 @@ export default function ImportContactsDialog() {
                     ) : (
                       <>
                         <Mail className="w-4 h-4 mr-2" />
-                        Connect Outlook Account
+                        Import Contacts from Outlook
                       </>
                     )}
                   </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      startOutlookConnect().catch((error) => {
+                        alert('Failed to start Outlook OAuth: ' + error.message);
+                      });
+                    }}
+                    className="w-full"
+                    disabled={useNodeBackend ? isLoadingOutlookStatus : false}
+                  >
+                    <Mail className="w-4 h-4 mr-2" />
+                    {useNodeBackend && outlookStatus?.connected
+                      ? "Reconnect Outlook Account"
+                      : "Connect Outlook Account"}
+                  </Button>
+                  {!useNodeBackend && (
+                    <p className="text-xs text-slate-500">
+                      Node backend mode is required for Outlook OAuth.
+                    </p>
+                  )}
+                  {useNodeBackend && !outlookStatus?.connected && (
+                    <p className="text-xs text-slate-500">
+                      Connect your account first, then click Import Contacts.
+                    </p>
+                  )}
+                  {useNodeBackend && outlookStatus?.connected && (
+                    <p className="text-xs text-slate-500">
+                      Connected. Click Import Contacts to pull people from Outlook.
+                    </p>
+                  )}
                   <p className="text-xs text-slate-500">
                     We'll only import contacts with valid email addresses
                   </p>
@@ -256,12 +386,17 @@ export default function ImportContactsDialog() {
                   Cancel
                 </Button>
                 <Button
-                  onClick={() => {
-                    setOpen(false);
-                    alert('Review the contacts above. Use the "Invite Team Member" button to add them individually.');
-                  }}
+                  onClick={() => bulkInviteMutation.mutate(preview.contacts)}
+                  disabled={bulkInviteMutation.isPending || preview.contacts.length === 0}
                 >
-                  Close & Invite Manually
+                  {bulkInviteMutation.isPending ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Inviting...
+                    </>
+                  ) : (
+                    "Invite All Contacts"
+                  )}
                 </Button>
               </div>
             </div>
