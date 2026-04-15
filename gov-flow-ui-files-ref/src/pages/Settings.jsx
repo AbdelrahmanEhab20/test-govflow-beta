@@ -467,8 +467,8 @@ export default function Settings() {
                 <div>
                   <Label>Organization Name</Label>
                   <Input
-                    value={user?.organization_name}
-                    onChange={(e) => setUser({ ...user, organization_name: e.target.value })}
+                    value="Graviton Ventures"
+                    disabled
                     className="mt-1.5 bg-slate-50" />
 
                 </div>
