@@ -8,8 +8,9 @@ import {
   Shield,
   Globe,
   Loader2,
-  Check } from
-"lucide-react";
+  Check
+} from
+  "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -231,7 +232,7 @@ export default function Settings() {
             <CardContent className="space-y-6">
               <div className="space-y-4">
                 <h4 className="text-slate-600 font-medium">Email Notifications</h4>
-                
+
                 <div className="flex items-center justify-between">
                   <div>
                     <Label>Task Assignments</Label>
@@ -240,7 +241,7 @@ export default function Settings() {
                   <Switch
                     checked={notificationSettings.email_assignments}
                     onCheckedChange={(checked) =>
-                    setNotificationSettings((prev) => ({ ...prev, email_assignments: checked }))
+                      setNotificationSettings((prev) => ({ ...prev, email_assignments: checked }))
                     } />
 
                 </div>
@@ -253,7 +254,7 @@ export default function Settings() {
                   <Switch
                     checked={notificationSettings.email_due_reminders}
                     onCheckedChange={(checked) =>
-                    setNotificationSettings((prev) => ({ ...prev, email_due_reminders: checked }))
+                      setNotificationSettings((prev) => ({ ...prev, email_due_reminders: checked }))
                     } />
 
                 </div>
@@ -266,7 +267,7 @@ export default function Settings() {
                   <Switch
                     checked={notificationSettings.email_mentions}
                     onCheckedChange={(checked) =>
-                    setNotificationSettings((prev) => ({ ...prev, email_mentions: checked }))
+                      setNotificationSettings((prev) => ({ ...prev, email_mentions: checked }))
                     } />
 
                 </div>
@@ -276,7 +277,7 @@ export default function Settings() {
 
               <div className="space-y-4">
                 <h4 className="text-slate-500 font-medium">In-App Notifications</h4>
-                
+
                 <div className="flex items-center justify-between">
                   <div>
                     <Label>All Notifications</Label>
@@ -285,7 +286,7 @@ export default function Settings() {
                   <Switch
                     checked={notificationSettings.in_app_all}
                     onCheckedChange={(checked) =>
-                    setNotificationSettings((prev) => ({ ...prev, in_app_all: checked }))
+                      setNotificationSettings((prev) => ({ ...prev, in_app_all: checked }))
                     } />
 
                 </div>
@@ -294,9 +295,9 @@ export default function Settings() {
               <div className="pt-4">
                 <Button onClick={handleSaveNotifications} disabled={updateMutation.isPending}>
                   {updateMutation.isPending ?
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" /> :
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" /> :
 
-                  <Save className="w-4 h-4 mr-2" />
+                    <Save className="w-4 h-4 mr-2" />
                   }
                   Save Preferences
                 </Button>
@@ -464,10 +465,10 @@ export default function Settings() {
             <CardContent className="space-y-6">
               <div className="space-y-4">
                 <div>
-                  <Label>Department Name</Label>
+                  <Label>Organization Name</Label>
                   <Input
-                    value="Graviton Ventures"
-                    disabled
+                    value={user?.organization_name}
+                    onChange={(e) => setUser({ ...user, organization_name: e.target.value })}
                     className="mt-1.5 bg-slate-50" />
 
                 </div>
@@ -492,7 +493,7 @@ export default function Settings() {
 
               <div className="space-y-4">
                 <h4 className="font-medium text-slate-900">Security</h4>
-                
+
                 <div className="p-4 bg-slate-50 rounded-lg">
                   <div className="flex items-start gap-3">
                     <Shield className="w-5 h-5 text-slate-600 mt-0.5" />
