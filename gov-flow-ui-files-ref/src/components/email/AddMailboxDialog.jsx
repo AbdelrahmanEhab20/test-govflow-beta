@@ -114,16 +114,17 @@ export default function AddMailboxDialog({ open, onOpenChange, user }) {
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="displayName">Display Name</Label>
-            <Input
-              id="displayName"
-              placeholder="e.g., Personal Email, Work Email"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              disabled={isOAuthProvider}
-            />
-          </div>
+          {!isOAuthProvider && (
+            <div className="space-y-2">
+              <Label htmlFor="displayName">Display Name</Label>
+              <Input
+                id="displayName"
+                placeholder="e.g., Personal Email, Work Email"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+              />
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="provider">Provider</Label>

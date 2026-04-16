@@ -23,6 +23,7 @@ import { getOutlookStatus, startOutlookConnect } from "@/api/outlookApi";
 import { getGmailStatus, startGmailConnect } from "@/api/googleApi";
 import { useNodeBackend } from "@/api/nodeBackendClient";
 import AddMailboxDialog from "@/components/email/AddMailboxDialog";
+import { syncMailboxInbox } from "@/api/emailApi";
 import { Badge } from "@/components/ui/badge";
 import { Trash2, Plus } from "lucide-react";
 
@@ -91,6 +92,26 @@ export default function Settings() {
         description: 'Your Outlook mailbox is now connected.',
       });
       refetchOutlookStatus();
+
+      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+      queryClient.invalidateQueries({ queryKey: ['emails'] });
+
+      if (useNodeBackend) {
+        (async () => {
+          try {
+            await syncMailboxInbox('outlook');
+          } catch (err) {
+            toast({
+              variant: 'destructive',
+              title: 'Inbox sync failed',
+              description: err?.message || 'Please try refreshing from Email Inbox.',
+            });
+          } finally {
+            queryClient.invalidateQueries({ queryKey: ['emails'] });
+          }
+        })();
+      }
+
       params.delete('ms_connected');
       params.delete('reason');
       const newSearch = params.toString();
@@ -114,6 +135,26 @@ export default function Settings() {
         description: 'Your Gmail mailbox is now connected.',
       });
       refetchGmailStatus();
+
+      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+      queryClient.invalidateQueries({ queryKey: ['emails'] });
+
+      if (useNodeBackend) {
+        (async () => {
+          try {
+            await syncMailboxInbox('gmail');
+          } catch (err) {
+            toast({
+              variant: 'destructive',
+              title: 'Inbox sync failed',
+              description: err?.message || 'Please try refreshing from Email Inbox.',
+            });
+          } finally {
+            queryClient.invalidateQueries({ queryKey: ['emails'] });
+          }
+        })();
+      }
+
       params.delete('google_connected');
       params.delete('reason');
       const newSearch = params.toString();

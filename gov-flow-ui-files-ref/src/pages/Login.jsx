@@ -46,7 +46,6 @@ export default function Login() {
 
   const appName = appPublicSettings?.public_settings?.appName || 'GovFlow';
   const companyName = appPublicSettings?.public_settings?.companyName || 'GovFlow';
-  const logoUrl = appPublicSettings?.public_settings?.logoUrl || '';
   const showGovflowCredit = appPublicSettings?.public_settings?.showGovflowCredit !== false;
   const govflowCreditText = appPublicSettings?.public_settings?.govflowCreditText || 'Powered by GovFlow';
 
@@ -54,13 +53,12 @@ export default function Login() {
     <div className="min-h-screen bg-slate-100 flex items-center justify-center px-4">
       <div className="w-full max-w-md bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8">
         <div className="flex justify-center mb-5">
-          {logoUrl ? (
-            <img src={logoUrl} alt={`${companyName} logo`} className="w-20 h-20 object-contain rounded-xl" />
-          ) : (
-            <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-white text-2xl font-bold">
-              GF
-            </div>
-          )}
+          <img
+            src="/favicon.svg"
+            alt="GovFlow logo"
+            className="w-20 h-20 object-contain rounded-xl"
+            draggable={false}
+          />
         </div>
 
         <h1 className="text-3xl font-bold text-slate-900 text-center">Welcome to {appName}</h1>
