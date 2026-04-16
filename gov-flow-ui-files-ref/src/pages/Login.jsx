@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
+import govflowLoginLogo from '../assets/login-govflow-logo.png';
 
 function GoogleIcon() {
   return (
@@ -54,7 +55,7 @@ export default function Login() {
       <div className="w-full max-w-md bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8">
         <div className="flex justify-center mb-5">
           <img
-            src="/favicon.svg"
+            src={govflowLoginLogo}
             alt="GovFlow logo"
             className="w-20 h-20 object-contain rounded-xl"
             draggable={false}
