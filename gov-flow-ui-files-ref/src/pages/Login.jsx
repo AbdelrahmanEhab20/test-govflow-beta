@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
-import govflowLoginLogo from '../assets/login-govflow-logo.png';
+import govflowLoginLogo from '../assets/new-govflow-logo.png';
 
 function GoogleIcon() {
   return (
@@ -53,13 +53,16 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-slate-100 flex items-center justify-center px-4">
       <div className="w-full max-w-md bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8">
-        <div className="flex justify-center mb-5">
-          <img
-            src={govflowLoginLogo}
-            alt="GovFlow logo"
-            className="w-20 h-20 object-contain rounded-xl"
-            draggable={false}
-          />
+        {/* Replace your current logo div with this */}
+        <div className="flex justify-center mb-6">
+          <div className="w-14 h-14 flex items-center justify-center rounded-2xl bg-white shadow-md ring-1 ring-gray-200">
+            <img
+              src={govflowLoginLogo}
+              alt="GovFlow logo"
+              className="w-9 h-9 object-cover rounded-md"
+              draggable={false}
+            />
+          </div>
         </div>
 
         <h1 className="text-3xl font-bold text-slate-900 text-center">Welcome to {appName}</h1>
