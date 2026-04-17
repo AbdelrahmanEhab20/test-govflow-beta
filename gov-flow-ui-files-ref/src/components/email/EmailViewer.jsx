@@ -33,14 +33,14 @@ import {
 } from "@/components/ui/dialog";
 
 const CATEGORY_COLORS = {
-  general: "bg-slate-100 text-slate-700",
+  general: "bg-slate-100 text-slate-700 dark:bg-slate-700/40 dark:text-slate-300",
   invitation: "bg-purple-100 text-purple-700",
   mou: "bg-blue-100 text-blue-700",
   media: "bg-pink-100 text-pink-700",
   data_request: "bg-amber-100 text-amber-700",
   complaint: "bg-red-100 text-red-700",
   protocol: "bg-emerald-100 text-emerald-700",
-  other: "bg-slate-100 text-slate-700"
+  other: "bg-slate-100 text-slate-700 dark:bg-slate-700/40 dark:text-slate-300"
 };
 
 function buildEmailSrcDoc(bodyHtml) {
@@ -306,7 +306,7 @@ export default function EmailViewer({
                 srcDoc={buildEmailSrcDoc(email.body_html)}
               />
             ) : (
-              <div className="h-full overflow-auto rounded-md border border-slate-200 dark:border-slate-700 bg-white p-4 whitespace-pre-wrap text-slate-700">
+              <div className="h-full overflow-auto rounded-md border border-slate-200 dark:border-slate-700 bg-white p-4 whitespace-pre-wrap text-slate-700 dark:text-slate-300">
                 {email.body_text || email.body_preview}
               </div>
             )}

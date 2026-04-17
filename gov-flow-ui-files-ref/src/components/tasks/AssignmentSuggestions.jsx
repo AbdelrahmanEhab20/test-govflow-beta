@@ -120,14 +120,14 @@ export default function AssignmentSuggestions({ taskId, taskData, onAssigned }) 
           >
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
-                <p className="font-medium text-slate-900">
+                <p className="font-medium text-slate-900 dark:text-slate-100">
                   {index + 1}. {suggestion.userName}
                 </p>
                 <Badge variant="secondary" className={getScoreColor(suggestion.score)}>
                   {suggestion.score}%
                 </Badge>
               </div>
-              <p className="text-sm text-slate-600">{suggestion.reasoning}</p>
+              <p className="text-sm text-slate-600 dark:text-slate-300">{suggestion.reasoning}</p>
             </div>
             <Button
               size="sm"

@@ -112,7 +112,7 @@ export default function NotificationCenter({ isOpen, onClose }) {
           {notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center p-6">
               <Bell className="w-12 h-12 text-slate-300 dark:text-slate-600 mb-3" />
-              <p className="text-slate-600 dark:text-slate-400">No notifications yet</p>
+              <p className="text-slate-600 dark:text-slate-300">No notifications yet</p>
             </div>
           ) : (
             <div className="divide-y dark:divide-slate-800">
@@ -131,10 +131,10 @@ export default function NotificationCenter({ isOpen, onClose }) {
                       <h3 className="font-medium text-slate-900 dark:text-white text-sm">
                         {notif.title}
                       </h3>
-                      <p className="text-slate-600 dark:text-slate-400 text-xs mt-1">
+                      <p className="text-slate-600 dark:text-slate-300 text-xs mt-1">
                         {notif.message}
                       </p>
-                      <p className="text-slate-500 dark:text-slate-500 text-xs mt-1">
+                      <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">
                         {formatDistanceToNow(new Date(notif.created_date), { addSuffix: true })}
                       </p>
                     </div>

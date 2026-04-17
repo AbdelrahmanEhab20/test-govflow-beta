@@ -33,8 +33,8 @@ export default function AccessControl() {
           <Shield className="w-6 h-6 text-white" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Access Control</h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Access Control</h1>
+          <p className="text-slate-500 dark:text-slate-300 text-sm">
             Manage user roles and control what each role can access across the system.
           </p>
         </div>

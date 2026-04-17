@@ -46,8 +46,8 @@ export default function Leaderboard() {
             <Trophy className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Leaderboard</h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400">Top performers across team members, departments & sectors</p>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Leaderboard</h1>
+            <p className="text-sm text-slate-500 dark:text-slate-300">Top performers across team members, departments & sectors</p>
           </div>
         </div>
         <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching} className="self-start sm:self-auto">

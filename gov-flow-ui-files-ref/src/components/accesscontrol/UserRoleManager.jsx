@@ -25,8 +25,8 @@ const ROLE_COLORS = {
   department_manager: "bg-blue-100 text-blue-700 border-blue-200",
   team_member: "bg-green-100 text-green-700 border-green-200",
   editor: "bg-yellow-100 text-yellow-700 border-yellow-200",
-  viewer: "bg-slate-100 text-slate-700 border-slate-200",
-  user: "bg-slate-100 text-slate-600 border-slate-200",
+  viewer: "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-700/40 dark:text-slate-300 dark:border-slate-600",
+  user: "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700/40 dark:text-slate-300 dark:border-slate-600",
 };
 
 export default function UserRoleManager() {

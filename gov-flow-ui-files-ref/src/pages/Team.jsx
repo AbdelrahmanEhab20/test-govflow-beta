@@ -201,8 +201,8 @@ export default function Team() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-6 sm:mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">My Team</h1>
-      <p className="text-slate-500 dark:text-slate-400 mt-1">{(currentUserDepartment || fallbackDepartment)} members and workload</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">My Team</h1>
+      <p className="text-slate-500 dark:text-slate-300 mt-1">{(currentUserDepartment || fallbackDepartment)} members and workload</p>
         </div>
         
         <div className="relative flex-1 sm:flex-none sm:w-64 isolate">

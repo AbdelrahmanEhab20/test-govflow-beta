@@ -45,7 +45,7 @@ export default function DepartmentList({ departments, onEdit }) {
               <div className="space-y-4">
                 <div>
                   <div className="flex items-start justify-between gap-2 mb-2">
-                    <h3 className="font-semibold text-lg text-slate-900">{dept.name}</h3>
+                    <h3 className="font-semibold text-lg text-slate-900 dark:text-slate-100">{dept.name}</h3>
                     {!dept.is_active && (
                       <Badge variant="outline" className="text-amber-700 border-amber-300">
                         Inactive
@@ -60,18 +60,18 @@ export default function DepartmentList({ departments, onEdit }) {
                 </div>
 
                 {dept.description && (
-                  <p className="text-sm text-slate-600">{dept.description}</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-300">{dept.description}</p>
                 )}
 
                 <div className="space-y-2 text-sm">
                   {dept.manager_name && (
                     <div>
                       <p className="text-slate-500">Manager:</p>
-                      <p className="text-slate-900 font-medium">{dept.manager_name}</p>
+                      <p className="text-slate-900 dark:text-slate-100 font-medium">{dept.manager_name}</p>
                     </div>
                   )}
 
-                  <div className="flex items-center gap-2 text-slate-600">
+                  <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
                     <Users className="w-4 h-4" />
                     <span>{dept.member_count || 0} members</span>
                   </div>

@@ -65,8 +65,8 @@ export default function Login() {
           </div>
         </div>
 
-        <h1 className="text-3xl font-bold text-slate-900 text-center">Welcome to {appName}</h1>
-        <p className="text-slate-500 text-center mt-2 mb-6">Sign in to continue</p>
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 text-center">Welcome to {appName}</h1>
+        <p className="text-slate-500 dark:text-slate-300 text-center mt-2 mb-6">Sign in to continue</p>
 
         <div className="space-y-3 mb-5">
           <button type="button" disabled className="w-full h-12 rounded-xl border border-slate-200 flex items-center justify-center gap-2 text-slate-500 bg-slate-50 cursor-not-allowed">

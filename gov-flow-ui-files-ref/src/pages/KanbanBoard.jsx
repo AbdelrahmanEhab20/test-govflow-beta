@@ -248,7 +248,7 @@ export default function KanbanBoard() {
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Task Board</h1>
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Task Board</h1>
             {(user?.role === ROLES.ADMIN || user?.role === ROLES.DEPARTMENT_ADMIN) && (
               <Button
                 variant="outline"

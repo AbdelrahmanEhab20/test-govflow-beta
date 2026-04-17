@@ -121,8 +121,8 @@ export default function TaskDetail() {
     return (
       <div className="p-6 lg:p-8">
         <div className="text-center py-12">
-          <h2 className="text-xl font-semibold text-slate-900">Task not found</h2>
-          <p className="text-slate-500 mt-2">The task you're looking for doesn't exist.</p>
+          <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Task not found</h2>
+          <p className="text-slate-500 dark:text-slate-300 mt-2">The task you're looking for doesn't exist.</p>
           <Link to={createPageUrl('Tasks')}>
             <Button className="mt-4">Back to Tasks</Button>
           </Link>
@@ -142,12 +142,12 @@ export default function TaskDetail() {
             </Button>
             <div>
               <div className="flex items-center gap-3 flex-wrap">
-                <h1 className="text-slate-600 text-2xl font-bold">{task.pillar}</h1>
+                <h1 className="text-slate-900 dark:text-slate-100 text-2xl font-bold">{task.pillar}</h1>
                 <StatusBadge status={task.status} />
                 <PriorityBadge priority={task.priority} />
               </div>
               {task.source_email_id &&
-              <div className="flex items-center gap-1 mt-2 text-sm text-purple-600">
+              <div className="flex items-center gap-1 mt-2 text-sm text-purple-600 dark:text-purple-300">
                   <Mail className="w-4 h-4" />
                   Created from email
                 </div>
@@ -203,9 +203,9 @@ export default function TaskDetail() {
               </CardHeader>
               <CardContent>
                 {task.brief_description ?
-                <p className="text-slate-700 whitespace-pre-wrap">{task.brief_description}</p> :
+                <p className="text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{task.brief_description}</p> :
 
-                <p className="text-slate-400 italic">No description provided</p>
+                <p className="text-slate-400 dark:text-slate-500 italic">No description provided</p>
                 }
               </CardContent>
             </Card>
@@ -217,7 +217,7 @@ export default function TaskDetail() {
                   <CardTitle className="text-lg">Deliverables</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-slate-700 whitespace-pre-wrap">{task.deliverables}</p>
+                  <p className="text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{task.deliverables}</p>
                 </CardContent>
               </Card>
             }
@@ -232,14 +232,14 @@ export default function TaskDetail() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="bg-purple-50 rounded-lg p-4">
+                  <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
                     <div className="flex items-start justify-between">
                       <div>
-                        <p className="font-medium">{email.subject}</p>
-                        <p className="text-sm text-slate-600 mt-1">
+                        <p className="font-medium text-slate-900 dark:text-slate-100">{email.subject}</p>
+                        <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
                           From: {email.from_name || email.from_email}
                         </p>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-slate-500 dark:text-slate-400">
                           {format(new Date(email.received_at), 'MMM d, yyyy h:mm a')}
                         </p>
                       </div>
@@ -252,7 +252,7 @@ export default function TaskDetail() {
                     </div>
                     {(email.has_attachments || (email.attachments && email.attachments.length > 0)) && (
                       <div className="mt-4 pt-4 border-t border-purple-100">
-                        <p className="text-sm font-medium text-slate-800 flex items-center gap-2">
+                        <p className="text-sm font-medium text-slate-800 dark:text-slate-200 flex items-center gap-2">
                           <Paperclip className="w-4 h-4 text-purple-600" />
                           Attachments
                         </p>
@@ -261,12 +261,12 @@ export default function TaskDetail() {
                             {email.attachments.map((att, idx) => (
                               <li
                                 key={att.id || `${att.name}-${idx}`}
-                                className="flex items-start justify-between gap-3 text-sm text-slate-700 bg-white/80 rounded-md px-3 py-2 border border-purple-100"
+                                className="flex items-start justify-between gap-3 text-sm text-slate-700 dark:text-slate-200 bg-white/80 dark:bg-slate-900/50 rounded-md px-3 py-2 border border-purple-100 dark:border-purple-800/40"
                               >
                                 <span className="font-medium truncate" title={att.name}>
                                   {att.name || 'File'}
                                 </span>
-                                <span className="text-xs text-slate-500 shrink-0">
+                                <span className="text-xs text-slate-500 dark:text-slate-400 shrink-0">
                                   {att.contentType ? `${att.contentType} · ` : ''}
                                   {formatAttachmentSize(att.size)}
                                 </span>
@@ -274,7 +274,7 @@ export default function TaskDetail() {
                             ))}
                           </ul>
                         ) : (
-                          <p className="text-xs text-slate-600 mt-2">
+                          <p className="text-xs text-slate-600 dark:text-slate-300 mt-2">
                             This email includes attachments. Open the message in Email Inbox and run Refresh to sync attachment details.
                           </p>
                         )}
@@ -324,10 +324,10 @@ export default function TaskDetail() {
                 <div className="space-y-4">
                   <ProgressBar value={task.completion_percent || 0} />
                   <div className="text-center">
-                    <span className="text-3xl font-bold text-slate-900">
+                    <span className="text-3xl font-bold text-slate-900 dark:text-slate-100">
                       {task.completion_percent || 0}%
                     </span>
-                    <p className="text-sm text-slate-500">Complete</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Complete</p>
                   </div>
                 </div>
               </CardContent>
@@ -442,7 +442,7 @@ export default function TaskDetail() {
             {/* Metadata */}
             <Card>
               <CardContent className="pt-6">
-                <div className="space-y-2 text-sm text-slate-500">
+                <div className="space-y-2 text-sm text-slate-500 dark:text-slate-400">
                   <p>Created: {format(new Date(task.created_date), 'MMM d, yyyy h:mm a')}</p>
                   {task.updated_date &&
                   <p>Updated: {format(new Date(task.updated_date), 'MMM d, yyyy h:mm a')}</p>

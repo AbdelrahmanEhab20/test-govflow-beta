@@ -154,14 +154,14 @@ export default function AddMailboxDialog({ open, onOpenChange, user }) {
           )}
 
           {isOAuthProvider && (
-            <div className="p-3 bg-blue-50 text-blue-800 rounded text-sm border border-blue-200">
+            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 rounded text-sm border border-blue-200 dark:border-blue-800/40">
               You’ll be redirected to {provider === "outlook" ? "Microsoft" : "Google"} to authorize access. After you
               return, the mailbox will be added automatically.
             </div>
           )}
 
           {error && (
-            <div className="p-3 bg-red-50 text-red-700 rounded text-sm">
+            <div className="p-3 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 rounded text-sm">
               {error}
             </div>
           )}

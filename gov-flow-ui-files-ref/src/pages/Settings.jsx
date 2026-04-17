@@ -242,8 +242,8 @@ export default function Settings() {
   return (
     <div className="p-6 lg:p-8 max-w-4xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-slate-500 text-2xl font-bold">Settings</h1>
-        <p className="text-slate-500 mt-1">Manage your preferences and system configuration</p>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Settings</h1>
+        <p className="text-slate-500 dark:text-slate-300 mt-1">Manage your preferences and system configuration</p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -272,12 +272,12 @@ export default function Settings() {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
-                <h4 className="text-slate-600 font-medium">Email Notifications</h4>
+                <h4 className="text-slate-600 dark:text-slate-300 font-medium">Email Notifications</h4>
 
                 <div className="flex items-center justify-between">
                   <div>
                     <Label>Task Assignments</Label>
-                    <p className="text-sm text-slate-500">Get notified when you're assigned to a task</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Get notified when you're assigned to a task</p>
                   </div>
                   <Switch
                     checked={notificationSettings.email_assignments}
@@ -290,7 +290,7 @@ export default function Settings() {
                 <div className="flex items-center justify-between">
                   <div>
                     <Label>Due Date Reminders</Label>
-                    <p className="text-sm text-slate-500">Receive reminders before tasks are due</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Receive reminders before tasks are due</p>
                   </div>
                   <Switch
                     checked={notificationSettings.email_due_reminders}
@@ -303,7 +303,7 @@ export default function Settings() {
                 <div className="flex items-center justify-between">
                   <div>
                     <Label>Mentions</Label>
-                    <p className="text-sm text-slate-500">Get notified when someone mentions you</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Get notified when someone mentions you</p>
                   </div>
                   <Switch
                     checked={notificationSettings.email_mentions}
@@ -317,12 +317,12 @@ export default function Settings() {
               <Separator />
 
               <div className="space-y-4">
-                <h4 className="text-slate-500 font-medium">In-App Notifications</h4>
+                <h4 className="text-slate-500 dark:text-slate-300 font-medium">In-App Notifications</h4>
 
                 <div className="flex items-center justify-between">
                   <div>
                     <Label>All Notifications</Label>
-                    <p className="text-sm text-slate-500">Show notifications in the app</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Show notifications in the app</p>
                   </div>
                   <Switch
                     checked={notificationSettings.in_app_all}
@@ -356,12 +356,12 @@ export default function Settings() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800/40">
                 <div className="flex items-start gap-3">
                   <Mail className="w-5 h-5 text-blue-600 mt-0.5" />
                   <div>
-                    <h4 className="font-medium text-blue-900">Provider Connections</h4>
-                    <p className="text-sm text-blue-700 mt-1">
+                    <h4 className="font-medium text-blue-900 dark:text-blue-200">Provider Connections</h4>
+                    <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
                       Connect Outlook and Gmail with OAuth, then choose mailbox in Email Inbox.
                     </p>
                   </div>
@@ -373,8 +373,8 @@ export default function Settings() {
                   <div className="p-4 border rounded-lg space-y-3">
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <p className="font-medium text-slate-900">Connected Mailboxes</p>
-                        <p className="text-xs text-slate-500">
+                        <p className="font-medium text-slate-900 dark:text-slate-100">Connected Mailboxes</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
                           Add Outlook or Gmail via OAuth. Mailboxes appear in Email Inbox selector.
                         </p>
                       </div>
@@ -386,30 +386,30 @@ export default function Settings() {
 
                     <div className="space-y-2">
                       {(user?.mailboxes || []).length === 0 ? (
-                        <div className="p-3 bg-slate-50 rounded text-sm text-slate-600">
+                        <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded text-sm text-slate-600 dark:text-slate-300">
                           No mailboxes connected yet.
                         </div>
                       ) : (
                         (user?.mailboxes || []).map((mailbox) => (
                           <div
                             key={mailbox.id}
-                            className="flex items-center justify-between gap-3 p-3 rounded border bg-white"
+                            className="flex items-center justify-between gap-3 p-3 rounded border bg-white dark:bg-slate-900"
                           >
                             <div className="min-w-0">
                               <div className="flex items-center gap-2 min-w-0">
-                                <p className="font-medium text-slate-900 truncate">
+                                <p className="font-medium text-slate-900 dark:text-slate-100 truncate">
                                   {mailbox.displayName || mailbox.email}
                                 </p>
                                 <Badge variant="secondary" className={`text-xs ${getProviderColor(mailbox.provider)}`}>
                                   {mailbox.provider}
                                 </Badge>
                                 {mailbox.isActive && (
-                                  <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-700">
+                                  <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
                                     active
                                   </Badge>
                                 )}
                               </div>
-                              <p className="text-xs text-slate-500 truncate">{mailbox.email}</p>
+                              <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{mailbox.email}</p>
                             </div>
 
                             <Button
@@ -432,23 +432,23 @@ export default function Settings() {
                   <div className="p-4 border rounded-lg space-y-3">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-medium text-slate-900">Microsoft 365 (Outlook)</p>
-                        <p className="text-xs text-slate-500">{outlookStatus?.mailbox?.email || 'Not connected'}</p>
+                        <p className="font-medium text-slate-900 dark:text-slate-100">Microsoft 365 (Outlook)</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">{outlookStatus?.mailbox?.email || 'Not connected'}</p>
                       </div>
                       <Button onClick={handleConnectMicrosoft} disabled={isLoadingOutlookStatus}>
                         {outlookStatus?.connected ? 'Reconnect Microsoft' : 'Connect Microsoft'}
                       </Button>
                     </div>
-                    <div className={`flex items-center gap-2 p-2 rounded ${outlookStatus?.connected ? 'bg-emerald-50' : 'bg-amber-50'}`}>
+                    <div className={`flex items-center gap-2 p-2 rounded ${outlookStatus?.connected ? 'bg-emerald-50 dark:bg-emerald-900/20' : 'bg-amber-50 dark:bg-amber-900/20'}`}>
                       {outlookStatus?.connected ? (
                         <>
                           <Check className="w-4 h-4 text-emerald-600" />
-                          <span className="text-xs text-emerald-700">Outlook connected</span>
+                          <span className="text-xs text-emerald-700 dark:text-emerald-300">Outlook connected</span>
                         </>
                       ) : (
                         <>
                           <Mail className="w-4 h-4 text-amber-600" />
-                          <span className="text-xs text-amber-700">Outlook not connected</span>
+                          <span className="text-xs text-amber-700 dark:text-amber-300">Outlook not connected</span>
                         </>
                       )}
                     </div>
@@ -457,32 +457,32 @@ export default function Settings() {
                   <div className="p-4 border rounded-lg space-y-3">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-medium text-slate-900">Google (Gmail)</p>
-                        <p className="text-xs text-slate-500">{gmailStatus?.mailbox?.email || 'Not connected'}</p>
+                        <p className="font-medium text-slate-900 dark:text-slate-100">Google (Gmail)</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">{gmailStatus?.mailbox?.email || 'Not connected'}</p>
                       </div>
                       <Button onClick={handleConnectGoogle} disabled={isLoadingGmailStatus}>
                         {gmailStatus?.connected ? 'Reconnect Google' : 'Connect Google'}
                       </Button>
                     </div>
-                    <div className={`flex items-center gap-2 p-2 rounded ${gmailStatus?.connected ? 'bg-emerald-50' : 'bg-amber-50'}`}>
+                    <div className={`flex items-center gap-2 p-2 rounded ${gmailStatus?.connected ? 'bg-emerald-50 dark:bg-emerald-900/20' : 'bg-amber-50 dark:bg-amber-900/20'}`}>
                       {gmailStatus?.connected ? (
                         <>
                           <Check className="w-4 h-4 text-emerald-600" />
-                          <span className="text-xs text-emerald-700">Gmail connected</span>
+                          <span className="text-xs text-emerald-700 dark:text-emerald-300">Gmail connected</span>
                         </>
                       ) : (
                         <>
                           <Mail className="w-4 h-4 text-amber-600" />
-                          <span className="text-xs text-amber-700">Gmail not connected</span>
+                          <span className="text-xs text-amber-700 dark:text-amber-300">Gmail not connected</span>
                         </>
                       )}
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center gap-2 p-3 bg-amber-50 rounded-lg">
+                <div className="flex items-center gap-2 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
                   <Mail className="w-5 h-5 text-amber-600" />
-                  <span className="text-sm text-amber-700">Switch to node backend mode to enable OAuth integrations</span>
+                  <span className="text-sm text-amber-700 dark:text-amber-300">Switch to node backend mode to enable OAuth integrations</span>
                 </div>
               )}
 
@@ -524,7 +524,7 @@ export default function Settings() {
                       العربية
                     </Button>
                   </div>
-                  <p className="text-xs text-slate-500 mt-1">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                     Status labels and UI elements will use both languages
                   </p>
                 </div>
@@ -533,17 +533,17 @@ export default function Settings() {
               <Separator />
 
               <div className="space-y-4">
-                <h4 className="font-medium text-slate-900">Security</h4>
+                <h4 className="font-medium text-slate-900 dark:text-slate-100">Security</h4>
 
-                <div className="p-4 bg-slate-50 rounded-lg">
+                <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
                   <div className="flex items-start gap-3">
                     <Shield className="w-5 h-5 text-slate-600 mt-0.5" />
                     <div>
-                      <p className="text-sm text-slate-700">
+                      <p className="text-sm text-slate-700 dark:text-slate-200">
                         This system uses role-based access control. Contact your administrator
                         to modify user permissions.
                       </p>
-                      <p className="text-xs text-slate-500 mt-2">
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
                         Your role: <span className="font-medium capitalize">{user?.role || 'user'}</span>
                       </p>
                     </div>

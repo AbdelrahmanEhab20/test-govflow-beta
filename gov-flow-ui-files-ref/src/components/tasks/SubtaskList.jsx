@@ -104,7 +104,7 @@ export default function SubtaskList({ taskId, subtasks = [], users = [] }) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h3 className="font-semibold text-slate-900">Subtasks</h3>
+          <h3 className="font-semibold text-slate-900 dark:text-slate-100">Subtasks</h3>
           {totalCount > 0 && (
             <span className="text-sm text-slate-500">
               {completedCount} / {totalCount} completed
@@ -115,7 +115,7 @@ export default function SubtaskList({ taskId, subtasks = [], users = [] }) {
 
       {/* Progress bar */}
       {totalCount > 0 && (
-        <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+        <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
           <div 
             className="h-full bg-emerald-500 rounded-full transition-all"
             style={{ width: `${(completedCount / totalCount) * 100}%` }}
@@ -152,7 +152,7 @@ export default function SubtaskList({ taskId, subtasks = [], users = [] }) {
           return (
             <div 
               key={subtask.id}
-              className="border border-slate-200 rounded-lg bg-white"
+              className="border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900"
             >
               <div className="flex items-center gap-3 p-3">
                 <button onClick={() => handleStatusChange(subtask, 
@@ -162,10 +162,10 @@ export default function SubtaskList({ taskId, subtasks = [], users = [] }) {
                 </button>
 
                 <div className="flex-1 min-w-0">
-                  <p className={`font-medium ${subtask.status === 'done' ? 'line-through text-slate-400' : 'text-slate-900'}`}>
+                  <p className={`font-medium ${subtask.status === 'done' ? 'line-through text-slate-400' : 'text-slate-900 dark:text-slate-100'}`}>
                     {subtask.title}
                   </p>
-                  <div className="flex items-center gap-3 mt-1 text-xs text-slate-500">
+                  <div className="flex items-center gap-3 mt-1 text-xs text-slate-500 dark:text-slate-400">
                     {ownerUser && <span>{ownerUser.full_name}</span>}
                     {subtask.due_date && (
                       <span>Due {format(new Date(subtask.due_date), 'MMM d')}</span>
@@ -223,7 +223,7 @@ export default function SubtaskList({ taskId, subtasks = [], users = [] }) {
                           checked={item.completed}
                           onCheckedChange={() => handleToggleChecklist(subtask, idx)}
                         />
-                        <span className={item.completed ? 'line-through text-slate-400' : ''}>
+                  <span className={item.completed ? 'line-through text-slate-400 dark:text-slate-500' : ''}>
                           {item.text}
                         </span>
                       </div>
@@ -236,7 +236,7 @@ export default function SubtaskList({ taskId, subtasks = [], users = [] }) {
         })}
 
         {subtasks.length === 0 && (
-          <p className="text-sm text-slate-500 text-center py-4">
+          <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">
             No subtasks yet. Add one above.
           </p>
         )}

@@ -14,14 +14,14 @@ export default function ProgressBar({ value = 0, showLabel = true, size = "defau
 
   return (
     <div className="flex items-center gap-2 w-full">
-      <div className={`flex-1 bg-slate-100 rounded-full ${heightClass} overflow-hidden`}>
+      <div className={`flex-1 bg-slate-100 dark:bg-slate-700 rounded-full ${heightClass} overflow-hidden`}>
         <div 
           className={`${getColor(value)} ${heightClass} rounded-full transition-all duration-500`}
           style={{ width: `${Math.min(100, value)}%` }}
         />
       </div>
       {showLabel && (
-        <span className="text-xs font-medium text-slate-600 w-10 text-right">
+        <span className="text-xs font-medium text-slate-600 dark:text-slate-300 w-10 text-right">
           {value}%
         </span>
       )}

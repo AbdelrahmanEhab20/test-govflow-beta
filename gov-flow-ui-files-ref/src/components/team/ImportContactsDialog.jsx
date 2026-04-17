@@ -235,8 +235,8 @@ export default function ImportContactsDialog() {
                     className="w-full"
                   >
                     <FileUp className="w-8 h-8 mx-auto text-slate-400 mb-2" />
-                    <p className="font-medium text-slate-900">Upload Contact File</p>
-                    <p className="text-xs text-slate-500 mt-1">
+                    <p className="font-medium text-slate-900 dark:text-slate-100">Upload Contact File</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-300 mt-1">
                       Drag and drop your .vcf or .ics file from Outlook
                     </p>
                   </button>
@@ -258,8 +258,8 @@ export default function ImportContactsDialog() {
                 <div className="text-center space-y-4 py-8">
                   <Mail className="w-12 h-12 mx-auto text-blue-500" />
                   <div>
-                    <p className="font-medium text-slate-900 mb-2">Connect Your Outlook Account</p>
-                    <p className="text-sm text-slate-600 mb-4">
+                    <p className="font-medium text-slate-900 dark:text-slate-100 mb-2">Connect Your Outlook Account</p>
+                    <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">
                       Import contacts directly from your Outlook/Office 365 account
                     </p>
                   </div>

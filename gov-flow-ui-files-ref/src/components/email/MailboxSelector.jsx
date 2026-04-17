@@ -79,11 +79,11 @@ export default function MailboxSelector({ user, activeMailbox, onMailboxChange }
   const getProviderColor = (provider) => {
     switch (provider) {
       case 'outlook':
-        return 'bg-blue-100 text-blue-700';
+        return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300';
       case 'gmail':
-        return 'bg-red-100 text-red-700';
+        return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300';
       default:
-        return 'bg-slate-100 text-slate-700';
+        return 'bg-slate-100 text-slate-700 dark:bg-slate-700/40 dark:text-slate-300';
     }
   };
 

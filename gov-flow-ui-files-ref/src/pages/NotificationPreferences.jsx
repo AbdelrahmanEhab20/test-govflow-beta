@@ -89,7 +89,7 @@ export default function NotificationPreferences() {
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <Bell className="w-8 h-8 text-blue-600 dark:text-blue-400" />
-            <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Notification Preferences</h1>
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Notification Preferences</h1>
           </div>
           <p className="text-slate-600 dark:text-slate-300">Manage how you receive notifications and updates</p>
         </div>

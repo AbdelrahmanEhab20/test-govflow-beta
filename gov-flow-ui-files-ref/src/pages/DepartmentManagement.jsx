@@ -157,8 +157,8 @@ export default function DepartmentManagement() {
           <ArrowLeft className="w-5 h-5" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Team Management</h1>
-          <p className="text-slate-500 mt-1">Manage organizational departments and sectors</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Team Management</h1>
+          <p className="text-slate-500 dark:text-slate-300 mt-1">Manage organizational departments and sectors</p>
         </div>
       </div>
 

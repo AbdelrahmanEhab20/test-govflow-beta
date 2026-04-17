@@ -6,22 +6,22 @@ const PRIORITY_CONFIG = {
   urgent: { 
     label: "Urgent",
     icon: AlertTriangle,
-    className: "bg-red-100 text-red-700 border-red-200"
+    className: "bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800/40"
   },
   high: { 
     label: "High",
     icon: ArrowUp,
-    className: "bg-orange-100 text-orange-700 border-orange-200"
+    className: "bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800/40"
   },
   medium: { 
     label: "Medium",
     icon: ArrowRight,
-    className: "bg-yellow-100 text-yellow-700 border-yellow-200"
+    className: "bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800/40"
   },
   low: { 
     label: "Low",
     icon: ArrowDown,
-    className: "bg-slate-100 text-slate-600 border-slate-200"
+    className: "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700/40 dark:text-slate-300 dark:border-slate-600"
   }
 };
 

@@ -315,7 +315,7 @@ export default function TaskForm() {
           <ArrowLeft className="w-5 h-5" />
         </Button>
         <div>
-          <h1 className="text-slate-500 text-2xl font-bold">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
             {isEditing ? 'Edit Task' : 'New Task'}
           </h1>
           {emailId && !isEditing &&

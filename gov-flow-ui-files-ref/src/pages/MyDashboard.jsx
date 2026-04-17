@@ -485,18 +485,13 @@ export default function MyDashboard() {
   return (
     <div className="p-4 sm:p-5 lg:p-8 space-y-5 bg-slate-50 dark:bg-slate-950 min-h-full">
       <div className="flex flex-col gap-3 sm:gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex items-start gap-3 min-w-0">
-          <div className="w-11 h-11 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-sm">
-            <Grid3X3 className="w-5 h-5" />
-          </div>
-          <div className="min-w-0">
-            <h1 className="text-4xl sm:text-5xl leading-[1.05] font-bold tracking-tight text-slate-900 dark:text-white">
-              My Dashboard
-            </h1>
-            <p className="text-slate-500 dark:text-slate-400 mt-0.5 text-sm sm:text-[15px] truncate">
-              Welcome back, {user?.full_name || "user"}
-            </p>
-          </div>
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+            My Dashboard
+          </h1>
+          <p className="text-slate-500 dark:text-slate-300 mt-0.5 text-sm sm:text-[15px] truncate">
+            Welcome back, {user?.full_name || "user"}
+          </p>
         </div>
 
         <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full lg:w-auto">

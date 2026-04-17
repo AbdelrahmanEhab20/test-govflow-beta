@@ -162,8 +162,8 @@ export default function Profile() {
   return (
     <div className="p-6 lg:p-8 max-w-2xl mx-auto min-h-screen">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Profile</h1>
-        <p className="text-slate-500 dark:text-slate-400 mt-1">Manage your account information</p>
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Profile</h1>
+        <p className="text-slate-500 dark:text-slate-300 mt-1">Manage your account information</p>
       </div>
 
       {/* Admin User Selector */}

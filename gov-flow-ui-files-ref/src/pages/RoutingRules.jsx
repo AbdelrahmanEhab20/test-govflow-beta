@@ -239,8 +239,8 @@ export default function RoutingRules() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Email Routing Rules</h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-1">Auto-categorize and assign incoming emails</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Email Routing Rules</h1>
+          <p className="text-slate-500 dark:text-slate-300 mt-1">Auto-categorize and assign incoming emails</p>
         </div>
         
         <Button onClick={() => setDialogOpen(true)}>
