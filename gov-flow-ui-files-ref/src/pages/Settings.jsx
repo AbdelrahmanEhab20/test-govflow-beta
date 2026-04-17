@@ -243,20 +243,29 @@ export default function Settings() {
     <div className="p-6 lg:p-8 max-w-4xl mx-auto">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Settings</h1>
-        <p className="text-slate-500 dark:text-slate-300 mt-1">Manage your preferences and system configuration</p>
+        <p className="text-slate-500 dark:text-slate-200 mt-1">Manage your preferences and system configuration</p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="mb-6">
-          <TabsTrigger value="notifications" className="gap-2">
+        <TabsList className="mb-6 bg-slate-100/90 dark:bg-slate-800/80">
+          <TabsTrigger
+            value="notifications"
+            className="gap-2 text-slate-700 dark:text-slate-200 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white"
+          >
             <Bell className="w-4 h-4" />
             Notifications
           </TabsTrigger>
-          <TabsTrigger value="email" className="gap-2">
+          <TabsTrigger
+            value="email"
+            className="gap-2 text-slate-700 dark:text-slate-200 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white"
+          >
             <Mail className="w-4 h-4" />
             Email Integration
           </TabsTrigger>
-          <TabsTrigger value="general" className="gap-2">
+          <TabsTrigger
+            value="general"
+            className="gap-2 text-slate-700 dark:text-slate-200 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white"
+          >
             <Globe className="w-4 h-4" />
             General
           </TabsTrigger>
