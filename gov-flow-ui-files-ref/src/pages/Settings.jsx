@@ -519,7 +519,7 @@ export default function Settings() {
                   <Input
                     value="Graviton Ventures"
                     disabled
-                    className="mt-1.5 bg-slate-50" />
+                    className="mt-1.5 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-100 disabled:opacity-100 disabled:text-slate-700 dark:disabled:text-slate-100" />
 
                 </div>
 
