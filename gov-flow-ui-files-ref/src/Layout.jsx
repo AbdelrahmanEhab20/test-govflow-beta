@@ -307,16 +307,19 @@ export default function Layout({ children, currentPageName }) {
                         : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white'}
                     `}
                   >
-                    <Icon className={`w-5 h-5 ${isActive ? 'text-blue-600' : 'text-slate-400'}`} />
+                    <span className="relative inline-flex">
+                      <Icon className={`w-5 h-5 ${isActive ? 'text-blue-600' : 'text-slate-400'}`} />
+                      {!desktopSidebarOpen && item.page === 'EmailInbox' && newEmails.length > 0 && (
+                        <span className="absolute -right-1 -top-1 w-2 h-2 rounded-full bg-red-500" />
+                      )}
+                    </span>
                     {desktopSidebarOpen && <span>{item.name}</span>}
                     {item.page === 'EmailInbox' && newEmails.length > 0 && (
                       desktopSidebarOpen ? (
                         <Badge className="ml-auto bg-red-500 text-white text-xs px-2">
                           {newEmails.length}
                         </Badge>
-                      ) : (
-                        <span className="absolute right-2 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-red-500" />
-                      )
+                      ) : null
                     )}
                   </Link>
                 );
