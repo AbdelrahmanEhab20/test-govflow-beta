@@ -315,7 +315,7 @@ export default function Layout({ children, currentPageName }) {
                           {newEmails.length}
                         </Badge>
                       ) : (
-                        <span className="absolute right-1.5 top-1.5 w-2 h-2 rounded-full bg-red-500" />
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-red-500" />
                       )
                     )}
                   </Link>
