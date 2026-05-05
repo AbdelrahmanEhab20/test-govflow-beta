@@ -35,6 +35,8 @@ export default function TeamPerformanceDashboard() {
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const aiModelConnected = false;
+  const aiDisabledMessage = 'No AI model connected';
 
   const { data: user } = useQuery({
     queryKey: ['currentUser'],
@@ -280,13 +282,16 @@ export default function TeamPerformanceDashboard() {
           </div>
 
           {/* AI Insights Button */}
-          <Button
-            onClick={handleOpenAiPanel}
-            className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white shadow-md gap-2 flex-shrink-0"
-          >
-            <Sparkles className="w-4 h-4" />
-            AI Insights
-          </Button>
+          <span title={!aiModelConnected ? aiDisabledMessage : undefined} className="inline-flex">
+            <Button
+              onClick={handleOpenAiPanel}
+              disabled={!aiModelConnected}
+              className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white shadow-md gap-2 flex-shrink-0"
+            >
+              <Sparkles className="w-4 h-4" />
+              AI Insights
+            </Button>
+          </span>
         </div>
 
         {/* Search and Filters */}
@@ -372,14 +377,17 @@ export default function TeamPerformanceDashboard() {
           </div>
           <div className="flex items-center gap-2">
             {!isAnalyzing && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => { setAiAnalysis(null); handleOpenAiPanel(); }}
-                className="text-white/80 hover:text-white hover:bg-white/20 text-xs h-7 px-2"
-              >
-                Refresh
-              </Button>
+              <span title={!aiModelConnected ? aiDisabledMessage : undefined} className="inline-flex">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={!aiModelConnected}
+                  onClick={() => { setAiAnalysis(null); handleOpenAiPanel(); }}
+                  className="text-white/80 hover:text-white hover:bg-white/20 text-xs h-7 px-2"
+                >
+                  Refresh
+                </Button>
+              </span>
             )}
             <Button variant="ghost" size="icon" onClick={() => setAiPanelOpen(false)} className="text-white hover:bg-white/20 h-7 w-7">
               <X className="w-4 h-4" />
@@ -407,7 +415,9 @@ export default function TeamPerformanceDashboard() {
                 <Sparkles className="w-6 h-6 text-slate-400" />
               </div>
               <p className="text-slate-500 dark:text-slate-400 text-sm">
-                {filteredInitiatives.length === 0
+                {!aiModelConnected
+                  ? 'No AI model connected.'
+                  : filteredInitiatives.length === 0
                   ? 'No initiatives to analyze. Adjust your filters.'
                   : 'Click "Refresh" to generate AI insights.'}
               </p>

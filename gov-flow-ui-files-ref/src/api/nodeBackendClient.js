@@ -101,6 +101,10 @@ export async function nodeRequest(path, { method = 'GET', query, body, headers =
   }
 
   if (!res.ok) {
+    const errorCode = data?.error?.code || data?.code || null;
+    if (res.status === 401 && errorCode === 'INVALID_TOKEN') {
+      clearNodeBackendAuthToken();
+    }
     const message =
       data?.error?.message ||
       data?.message ||

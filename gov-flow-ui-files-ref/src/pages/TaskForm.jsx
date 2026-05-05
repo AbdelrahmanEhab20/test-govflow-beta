@@ -71,6 +71,8 @@ export default function TaskForm() {
   const [newTag, setNewTag] = useState('');
   const [newStakeholder, setNewStakeholder] = useState('');
   const [aiLoading, setAiLoading] = useState({ description: false, suggestions: false, categories: false, priority: false });
+  const aiModelConnected = false;
+  const aiDisabledMessage = 'No AI model connected';
 
   const { data: existingTask, isLoading: taskLoading } = useQuery({
     queryKey: ['task', taskId],
@@ -330,16 +332,18 @@ export default function TaskForm() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg">Basic Information</CardTitle>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleAIGenerateDescription}
-                disabled={aiLoading.description || !formData.pillar}>
+              <span title={!aiModelConnected ? aiDisabledMessage : undefined} className="inline-flex">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAIGenerateDescription}
+                  disabled={!aiModelConnected || aiLoading.description || !formData.pillar}>
 
-                <Wand2 className="w-4 h-4 mr-1" />
-                {aiLoading.description ? 'Generating...' : 'AI Generate'}
-              </Button>
+                  <Wand2 className="w-4 h-4 mr-1" />
+                  {aiLoading.description ? 'Generating...' : 'AI Generate'}
+                </Button>
+              </span>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -397,16 +401,18 @@ export default function TaskForm() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg">Assignment</CardTitle>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleAISuggestMembers}
-                disabled={aiLoading.suggestions || !formData.pillar || !formData.brief_description}>
+              <span title={!aiModelConnected ? aiDisabledMessage : undefined} className="inline-flex">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAISuggestMembers}
+                  disabled={!aiModelConnected || aiLoading.suggestions || !formData.pillar || !formData.brief_description}>
 
-                <Wand2 className="w-4 h-4 mr-1" />
-                {aiLoading.suggestions ? 'Suggesting...' : 'AI Suggest'}
-              </Button>
+                  <Wand2 className="w-4 h-4 mr-1" />
+                  {aiLoading.suggestions ? 'Suggesting...' : 'AI Suggest'}
+                </Button>
+              </span>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -433,17 +439,19 @@ export default function TaskForm() {
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <Label>Priority</Label>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleAIPrioritizeTask}
-                    disabled={aiLoading.priority || !formData.pillar || !formData.brief_description}
-                    className="h-6 px-2 text-xs">
+                  <span title={!aiModelConnected ? aiDisabledMessage : undefined} className="inline-flex">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleAIPrioritizeTask}
+                      disabled={!aiModelConnected || aiLoading.priority || !formData.pillar || !formData.brief_description}
+                      className="h-6 px-2 text-xs">
 
-                    <Wand2 className="w-3 h-3 mr-1" />
-                    {aiLoading.priority ? 'Analyzing...' : 'AI'}
-                  </Button>
+                      <Wand2 className="w-3 h-3 mr-1" />
+                      {aiLoading.priority ? 'Analyzing...' : 'AI'}
+                    </Button>
+                  </span>
                 </div>
                 <Select
                   value={formData.priority}
@@ -620,16 +628,18 @@ export default function TaskForm() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg">Additional Information</CardTitle>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleAICategorize}
-                disabled={aiLoading.categories || !formData.pillar || !formData.brief_description}>
+              <span title={!aiModelConnected ? aiDisabledMessage : undefined} className="inline-flex">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAICategorize}
+                  disabled={!aiModelConnected || aiLoading.categories || !formData.pillar || !formData.brief_description}>
 
-                <Wand2 className="w-4 h-4 mr-1" />
-                {aiLoading.categories ? 'Analyzing...' : 'AI Categorize'}
-              </Button>
+                  <Wand2 className="w-4 h-4 mr-1" />
+                  {aiLoading.categories ? 'Analyzing...' : 'AI Categorize'}
+                </Button>
+              </span>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">

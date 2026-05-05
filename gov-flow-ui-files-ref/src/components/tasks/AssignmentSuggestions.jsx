@@ -12,6 +12,8 @@ export default function AssignmentSuggestions({ taskId, taskData, onAssigned }) 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [assignedUser, setAssignedUser] = useState(null);
+  const aiModelConnected = false;
+  const aiDisabledMessage = 'No AI model connected';
 
   const assignMutation = useMutation({
     mutationFn: (userId) =>
@@ -79,21 +81,23 @@ export default function AssignmentSuggestions({ taskId, taskData, onAssigned }) 
             <Zap className="w-5 h-5 text-amber-500" />
             AI Assignment Suggestions
           </CardTitle>
-          <Button
-            size="sm"
-            onClick={loadSuggestions}
-            disabled={isLoading}
-            variant="outline"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Loading...
-              </>
-            ) : (
-              'Get Suggestions'
-            )}
-          </Button>
+          <span title={!aiModelConnected ? aiDisabledMessage : undefined} className="inline-flex">
+            <Button
+              size="sm"
+              onClick={loadSuggestions}
+              disabled={!aiModelConnected || isLoading}
+              variant="outline"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Loading...
+                </>
+              ) : (
+                'Get Suggestions'
+              )}
+            </Button>
+          </span>
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -109,7 +113,9 @@ export default function AssignmentSuggestions({ taskId, taskData, onAssigned }) 
 
         {suggestions.length === 0 && !isLoading && !error && (
           <p className="text-sm text-slate-500 text-center py-4">
-            Click "Get Suggestions" to get AI-powered assignment recommendations
+            {aiModelConnected
+              ? 'Click "Get Suggestions" to get AI-powered assignment recommendations'
+              : 'No AI model connected'}
           </p>
         )}
 
