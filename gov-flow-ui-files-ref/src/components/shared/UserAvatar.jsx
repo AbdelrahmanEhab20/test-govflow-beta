@@ -43,7 +43,7 @@ export default function UserAvatar({ user, size = "default", showTooltip = true 
 
   const avatarComponent = (
     <Avatar className={sizeClasses[size]}>
-      <AvatarImage src={avatarUrl} />
+      <AvatarImage src={avatarUrl || undefined} />
       <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-500 text-white">
         {getInitials(displayName || user?.email)}
       </AvatarFallback>

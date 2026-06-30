@@ -4,6 +4,7 @@ import { config } from '../config/index.js';
 import { asyncHandler, createHttpError } from '../middleware/errorHandler.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { uploadAvatarMiddleware } from '../middleware/upload.js';
+import { isRemoteStorageEnabled, uploadAvatar } from '../services/storageService.js';
 import { User } from '../models/index.js';
 import { inviteUser } from '../services/usersService.js';
 import {
@@ -297,9 +298,14 @@ router.post(
       });
     }
 
-    const fileName = path.basename(req.file.path);
-    const publicPath = `/uploads/${fileName}`;
-    const publicUrl = `${req.protocol}://${req.get('host')}${publicPath}`;
+    let publicUrl;
+    if (isRemoteStorageEnabled()) {
+      publicUrl = await uploadAvatar(req.file);
+    } else {
+      const fileName = path.basename(req.file.path);
+      const publicPath = `/uploads/${fileName}`;
+      publicUrl = `${req.protocol}://${req.get('host')}${publicPath}`;
+    }
 
     const user = await User.findOneAndUpdate(
       { id: req.user.id },

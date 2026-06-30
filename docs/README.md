@@ -130,6 +130,39 @@
 
 ---
 
+#### 5.1 **INFRASTRUCTURE_BACKEND_ARCHITECTURE_UAE_GCC.md**
+*Procurement-ready infrastructure and backend architecture for UAE/GCC*
+
+**Contents:**
+- Cloud options: full cloud, hybrid, on-prem/private cloud
+- UAE compliance-oriented decision matrix
+- Microservices service catalog (auth, workflow, DMS, notifications, analytics)
+- DevOps, Kubernetes, Helm, CI/CD, blue-green strategy
+- Scalability, SLA targets, DR posture, support operating model
+- White-label and multi-tenant commercial deployment guidance
+
+**Audience:** Government Committees, Enterprise Architects, CTO/CISO, Pre-sales
+**Length:** 20+ pages
+**When to use:** RFP responses, procurement presentations, sovereign architecture decisions
+
+---
+
+#### 5.2 **INFRASTRUCTURE_BACKEND_ARCHITECTURE_UAE_GCC_EXECUTIVE.md**
+*Executive decision edition (<=10 pages) for CIO/procurement audiences*
+
+**Contents:**
+- Decision-focused deployment options (A/B/C)
+- UAE recommendation with concise justification
+- Security/compliance highlights and SLA commitments
+- Commercial delivery model and high-level timeline
+- Final decision matrix for procurement committees
+
+**Audience:** CIOs, procurement committees, directors, steering committees
+**Length:** Executive format (10 pages max)
+**When to use:** Board/procurement briefings and decision workshops
+
+---
+
 ### Executive & Planning
 
 #### 6. **DEPLOYMENT_EXECUTIVE_SUMMARY.md**

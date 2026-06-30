@@ -73,7 +73,15 @@ backend/
 | `MONGO_URI`        | `mongodb://localhost:27017/govflow_dev`     | MongoDB connection string                |
 | `JWT_SECRET`       | `govflow-dev-secret-change-in-prod`         | Signs dev tokens (change in staging/prod)|
 | `DEFAULT_TENANT_ID`| `default`                                   | Tenant identifier                        |
-| `UPLOADS_DIR`      | `./uploads`                                 | Local file upload directory              |
+| `UPLOADS_DIR`      | `./uploads`                                 | Local file upload directory (dev fallback) |
+| `UPLOADS_MAX_SIZE` | `5242880` (5 MB)                            | Max avatar upload size in bytes            |
+| `STORAGE_PROVIDER` | `local`                                     | Set to `r2` when using Cloudflare R2       |
+| `S3_BUCKET`        | —                                           | R2/S3 bucket name                          |
+| `S3_REGION`        | `auto`                                      | R2 uses `auto`                             |
+| `S3_ENDPOINT`      | —                                           | e.g. `https://<account_id>.r2.cloudflarestorage.com` |
+| `S3_ACCESS_KEY_ID` | —                                           | R2 API token access key                    |
+| `S3_SECRET_ACCESS_KEY` | —                                       | R2 API token secret                        |
+| `S3_PUBLIC_BASE_URL` | —                                         | Public bucket URL, e.g. `https://pub-xxx.r2.dev` |
 | `CORS_ORIGINS`     | `http://localhost:5173,http://localhost:5174`| Allowed frontend origins                 |
 
 ## Development notes
