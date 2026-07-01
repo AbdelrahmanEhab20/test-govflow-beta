@@ -18,6 +18,7 @@ const DepartmentSchema = new mongoose.Schema(
 
     parent_department_id: { type: String },
     parent_department_name: { type: String },
+    sort_order: { type: Number, default: 0 },
 
     is_active: { type: Boolean, default: true },
 

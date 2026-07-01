@@ -6,6 +6,7 @@ import {
   createDepartment,
   updateDepartment,
   deleteDepartment,
+  moveDepartmentInHierarchy,
   listTeams,
   updateTeamMember,
 } from '../services/departmentsService.js';
@@ -32,6 +33,31 @@ router.post(
   asyncHandler(async (req, res) => {
     const created = await createDepartment(req.body || {});
     res.status(201).json(created);
+  }),
+);
+
+// POST /departments/hierarchy-move
+router.post(
+  '/departments/hierarchy-move',
+  requireAuth,
+  requireRole('admin', 'department_admin'),
+  asyncHandler(async (req, res) => {
+    const { department_id: departmentId, parent_department_id: parentDepartmentId, sort_index: sortIndex } =
+      req.body || {};
+
+    if (!departmentId || sortIndex === undefined || sortIndex === null) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_REQUEST', message: 'department_id and sort_index are required' },
+      });
+    }
+
+    const updated = await moveDepartmentInHierarchy(
+      departmentId,
+      parentDepartmentId || null,
+      Number(sortIndex),
+    );
+    res.json(updated);
   }),
 );
 

@@ -35,7 +35,7 @@ export default function SectorsView({ sectors }) {
         </div>
         <div className="space-y-2">
           {sectors.map((sector) => (
-            <Card key={sector.name} className="p-4 flex items-center justify-between cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800">
+            <Card key={sector.name} className="p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800">
               <div>
                 <h3 className="font-semibold text-slate-900 dark:text-white">{sector.name}</h3>
               </div>
@@ -62,7 +62,7 @@ export default function SectorsView({ sectors }) {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {sectors.map((sector) => (
-          <Card key={sector.name} className={`p-6 flex flex-col gap-4 hover:shadow-lg transition-shadow cursor-pointer ${sectorColors[sector.name] || sectorColors['Tourism']}`}>
+          <Card key={sector.name} className={`p-6 flex flex-col gap-4 hover:shadow-lg transition-shadow ${sectorColors[sector.name] || sectorColors['Tourism']}`}>
             <h3 className="font-bold text-lg">{sector.name}</h3>
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm">

@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1076.0",
-    "@azure/msal-node": "^5.1.0",
+    "@azure/msal-node": "^5.3.1",
     "@sendgrid/mail": "^8.1.6",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
@@ -26,8 +26,8 @@
     "mongoose": "^8.3.4",
     "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.1",
-    "resend": "^6.10.0",
-    "uuid": "^9.0.1"
+    "resend": "^6.16.0",
+    "uuid": "^11.1.1"
   },
   "devDependencies": {
     "eslint": "^9.3.0",

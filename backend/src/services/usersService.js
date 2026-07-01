@@ -131,6 +131,30 @@ export async function updateUser(userId, data, actor = null) {
     patch.department = normalizeDepartmentFromInput(patch.department, canonicalDepartmentMap);
   }
 
+  const allDepartments = await Department.find(withTenant()).lean().exec();
+  const deptById = new Map(allDepartments.map((department) => [department.id, department]));
+
+  if (Object.prototype.hasOwnProperty.call(patch, 'department_id')) {
+    const deptId = String(patch.department_id || '').trim();
+    if (!deptId) {
+      patch.department = '';
+    } else {
+      const department = deptById.get(deptId);
+      if (!department) {
+        throw createHttpError(404, 'Department not found', 'DEPARTMENT_NOT_FOUND');
+      }
+      patch.department = department.name;
+    }
+  } else if (Object.prototype.hasOwnProperty.call(patch, 'department')) {
+    const deptName = patch.department;
+    if (!deptName) {
+      patch.department_id = '';
+    } else {
+      const department = allDepartments.find((item) => item.name === deptName);
+      patch.department_id = department?.id || '';
+    }
+  }
+
   const now = nowIso();
   const updated = await User.findOneAndUpdate(
     withTenant({ id: userId }),

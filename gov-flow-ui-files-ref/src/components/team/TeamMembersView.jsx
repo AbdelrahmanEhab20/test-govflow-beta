@@ -8,6 +8,17 @@ import { Button } from "@/components/ui/button";
 export default function TeamMembersView({ members }) {
   const [viewMode, setViewMode] = useState('grid');
 
+  if (members.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-slate-500">No team members found.</p>
+        <p className="text-sm text-slate-400 mt-2">
+          Assign members from the Departments tab using View Details.
+        </p>
+      </div>
+    );
+  }
+
   const getInitials = (name) => {
     if (!name) return "?";
     return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);

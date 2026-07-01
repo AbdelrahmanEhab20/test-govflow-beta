@@ -1,20 +1,36 @@
 import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { LayoutList, LayoutGrid, Users, Mail, Phone, Edit2, Eye } from "lucide-react";
+import { LayoutList, LayoutGrid, Users, Mail, Phone, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import DepartmentDetailModal from "./DepartmentDetailModal";
 
-export default function DepartmentsView({ departments, teamMembers = [], onDepartmentUpdate }) {
+export default function DepartmentsView({
+  departments,
+  teamMembers = [],
+  onDepartmentUpdate,
+  onMembersUpdate,
+  isSavingDepartment = false,
+}) {
   const [viewMode, setViewMode] = useState('grid');
   const [selectedDepartment, setSelectedDepartment] = useState(null);
 
-  const handleDepartmentSave = (updatedData) => {
-    if (onDepartmentUpdate) {
-      onDepartmentUpdate(selectedDepartment.id, updatedData);
-    }
-    setSelectedDepartment(null);
+  const handleDepartmentSave = async (updatedData) => {
+    if (!selectedDepartment || !onDepartmentUpdate) return;
+    await onDepartmentUpdate(selectedDepartment.id, updatedData);
+    setSelectedDepartment((prev) => (prev ? { ...prev, ...updatedData } : prev));
   };
+
+  const modal = (
+    <DepartmentDetailModal
+      department={selectedDepartment}
+      teamMembers={teamMembers}
+      onClose={() => setSelectedDepartment(null)}
+      onSave={handleDepartmentSave}
+      onMembersUpdate={onMembersUpdate}
+      isSaving={isSavingDepartment}
+    />
+  );
 
   if (viewMode === 'list') {
     return (
@@ -41,8 +57,8 @@ export default function DepartmentsView({ departments, teamMembers = [], onDepar
                     <p className="text-xs text-slate-500 dark:text-slate-400">{dept.sector}</p>
                   </div>
                   <Badge variant="outline">{dept.member_count || 0} members</Badge>
-                  <Button 
-                    variant="ghost" 
+                  <Button
+                    variant="ghost"
                     size="sm"
                     onClick={() => setSelectedDepartment(dept)}
                   >
@@ -53,12 +69,7 @@ export default function DepartmentsView({ departments, teamMembers = [], onDepar
             ))}
           </div>
         </div>
-        <DepartmentDetailModal 
-          department={selectedDepartment}
-          teamMembers={teamMembers}
-          onClose={() => setSelectedDepartment(null)}
-          onSave={handleDepartmentSave}
-        />
+        {modal}
       </>
     );
   }
@@ -102,7 +113,7 @@ export default function DepartmentsView({ departments, teamMembers = [], onDepar
               </div>
               <div className="mt-auto pt-4 border-t border-slate-200 dark:border-slate-700">
                 <p className="text-sm font-semibold text-slate-900 dark:text-white mb-3">{dept.member_count || 0} Members</p>
-                <Button 
+                <Button
                   variant="outline"
                   size="sm"
                   className="w-full"
@@ -116,12 +127,7 @@ export default function DepartmentsView({ departments, teamMembers = [], onDepar
           ))}
         </div>
       </div>
-      <DepartmentDetailModal 
-        department={selectedDepartment}
-        teamMembers={teamMembers}
-        onClose={() => setSelectedDepartment(null)}
-        onSave={handleDepartmentSave}
-      />
+      {modal}
     </>
   );
 }

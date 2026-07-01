@@ -1,3 +1,8 @@
 {
-  "cSpell.words": ["govflow"]
+  "cSpell.enabled": true,
+  "cSpell.language": "en,ar",
+  "cSpell.ignoreRandomStrings": true,
+  "cSpell.import": ["./cspell.json"],
+  "tailwindCSS.experimental.configFile": "gov-flow-ui-files-ref/tailwind.config.js",
+  "tailwindCSS.rootFontSize": 16
 }

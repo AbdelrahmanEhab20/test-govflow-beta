@@ -1,39 +1,57 @@
 import React, { useState, useMemo } from "react";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Mail, Phone, X, Plus, Search } from "lucide-react";
-import { updateTeam } from "@/api/departmentsApi";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { updateUser } from "@/api/usersApi";
+import { useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/components/ui/use-toast";
 
-export default function DepartmentMembersManager({ 
-  departmentName, 
+function memberBelongsToDepartment(member, departmentId, departmentName) {
+  if (departmentId && member.department_id === departmentId) return true;
+  if (departmentName && member.department_name === departmentName) return true;
+  return false;
+}
+
+export default function DepartmentMembersManager({
+  departmentId,
+  departmentName,
   teamMembers = [],
-  onMembersUpdate 
+  onMembersUpdate,
 }) {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedToAdd, setSelectedToAdd] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
 
-  const currentMembers = useMemo(() => 
-    teamMembers.filter(m => m.department_name === departmentName),
-    [teamMembers, departmentName]
+  const currentMembers = useMemo(
+    () => teamMembers.filter((member) => memberBelongsToDepartment(member, departmentId, departmentName)),
+    [teamMembers, departmentId, departmentName],
   );
 
-  const availableMembers = useMemo(() => 
-    teamMembers.filter(m => 
-      m.department_name !== departmentName &&
-      (searchQuery === '' || 
-        m.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        m.job_title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        m.email?.toLowerCase().includes(searchQuery.toLowerCase()))
-    ),
-    [teamMembers, departmentName, searchQuery]
+  const availableMembers = useMemo(
+    () =>
+      teamMembers.filter(
+        (member) =>
+          !memberBelongsToDepartment(member, departmentId, departmentName) &&
+          (searchQuery === '' ||
+            member.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            member.job_title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            member.email?.toLowerCase().includes(searchQuery.toLowerCase())),
+      ),
+    [teamMembers, departmentId, departmentName, searchQuery],
   );
+
+  const invalidateMemberQueries = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['users'] }),
+      queryClient.invalidateQueries({ queryKey: ['departments'] }),
+      queryClient.invalidateQueries({ queryKey: ['teamMembers'] }),
+    ]);
+    onMembersUpdate?.();
+  };
 
   const getInitials = (name) => {
     if (!name) return "?";
@@ -64,38 +82,49 @@ export default function DepartmentMembersManager({
   };
 
   const handleRemoveCurrentMember = async (memberId) => {
-    const member = teamMembers.find(m => m.id === memberId);
-    if (!member) return;
-
     try {
       setIsSaving(true);
-      await updateTeam(memberId, {
-        department_name: ''
+      await updateUser(memberId, { department_id: '', department: '' });
+      await invalidateMemberQueries();
+      toast({
+        title: 'Member removed',
+        description: 'User was unassigned from this department.',
       });
-      await queryClient.invalidateQueries({ queryKey: ['teamMembers'] });
-      onMembersUpdate?.();
     } catch (error) {
-      console.error('Error removing member:', error);
+      toast({
+        title: 'Could not remove member',
+        description: error?.message || 'Please try again.',
+        variant: 'destructive',
+      });
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleSaveNewMembers = async () => {
-    if (selectedToAdd.length === 0) return;
+    if (selectedToAdd.length === 0 || !departmentId) return;
 
     try {
       setIsSaving(true);
+      const count = selectedToAdd.length;
       for (const memberId of selectedToAdd) {
-        await updateTeam(memberId, {
-          department_name: departmentName
+        await updateUser(memberId, {
+          department_id: departmentId,
+          department: departmentName,
         });
       }
-      await queryClient.invalidateQueries({ queryKey: ['teamMembers'] });
+      await invalidateMemberQueries();
       setSelectedToAdd([]);
-      onMembersUpdate?.();
+      toast({
+        title: 'Members added',
+        description: `${count} member${count !== 1 ? 's' : ''} assigned to ${departmentName}.`,
+      });
     } catch (error) {
-      console.error('Error adding members:', error);
+      toast({
+        title: 'Could not add members',
+        description: error?.message || 'Please try again.',
+        variant: 'destructive',
+      });
     } finally {
       setIsSaving(false);
     }
@@ -103,7 +132,6 @@ export default function DepartmentMembersManager({
 
   return (
     <div className="space-y-4">
-      {/* Current Members */}
       <div>
         <h4 className="font-semibold text-slate-900 dark:text-white mb-3">
           Current Members ({currentMembers.length})
@@ -116,7 +144,7 @@ export default function DepartmentMembersManager({
               <Card key={member.id} className="p-3 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700">
                 <div className="flex items-center gap-3 flex-1">
                   <Avatar className="w-9 h-9">
-                    <AvatarImage src={resolveMediaUrl(member.avatar_url || member.avatar || member.photo_url || member.image_url || member.profile_image)} />
+                    <AvatarImage src={resolveMediaUrl(member.avatar_url || member.avatar || member.photo_url || member.image_url || member.profile_image) || undefined} />
                     <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-500 text-white text-xs">
                       {getInitials(member.name)}
                     </AvatarFallback>
@@ -153,11 +181,9 @@ export default function DepartmentMembersManager({
         </div>
       </div>
 
-      {/* Add Members Section */}
       <div className="border-t border-slate-200 dark:border-slate-700 pt-4">
         <h4 className="font-semibold text-slate-900 dark:text-white mb-3">Add Members</h4>
-        
-        {/* Search Input */}
+
         <div className="relative mb-3 isolate">
           <Search className="pointer-events-none absolute inset-y-0 left-3 my-auto w-4 h-4 text-slate-400" />
           <Input
@@ -168,7 +194,6 @@ export default function DepartmentMembersManager({
           />
         </div>
 
-        {/* Available Members List */}
         <div className="space-y-2 max-h-64 overflow-y-auto border border-slate-200 dark:border-slate-700 rounded-lg p-3">
           {availableMembers.length === 0 ? (
             <p className="text-sm text-slate-500 text-center py-4">
@@ -178,17 +203,17 @@ export default function DepartmentMembersManager({
             availableMembers.map(member => {
               const isSelected = selectedToAdd.includes(member.id);
               return (
-                <Card 
-                  key={member.id} 
+                <Card
+                  key={member.id}
                   className={`p-3 flex items-center justify-between cursor-pointer transition-colors ${
-                    isSelected 
-                      ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800' 
+                    isSelected
+                      ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
                       : 'hover:bg-slate-50 dark:hover:bg-slate-700'
                   }`}
                 >
                   <div className="flex items-center gap-3 flex-1">
                     <Avatar className="w-9 h-9">
-                      <AvatarImage src={resolveMediaUrl(member.avatar_url || member.avatar || member.photo_url || member.image_url || member.profile_image)} />
+                      <AvatarImage src={resolveMediaUrl(member.avatar_url || member.avatar || member.photo_url || member.image_url || member.profile_image) || undefined} />
                       <AvatarFallback className="bg-gradient-to-br from-green-500 to-emerald-500 text-white text-xs">
                         {getInitials(member.name)}
                       </AvatarFallback>
@@ -222,12 +247,11 @@ export default function DepartmentMembersManager({
           )}
         </div>
 
-        {/* Save Button */}
         {selectedToAdd.length > 0 && (
           <div className="mt-4 flex justify-end">
             <Button
               onClick={handleSaveNewMembers}
-              disabled={isSaving}
+              disabled={isSaving || !departmentId}
               className="gap-2"
             >
               {isSaving ? 'Saving...' : `Add ${selectedToAdd.length} Member${selectedToAdd.length !== 1 ? 's' : ''}`}

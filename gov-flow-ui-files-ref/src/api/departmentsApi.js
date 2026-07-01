@@ -33,6 +33,20 @@ export async function updateDepartment(id, data) {
   return base44.entities.Department.update(id, data);
 }
 
+export async function moveDepartmentInHierarchy(departmentId, parentDepartmentId, sortIndex) {
+  if (useNodeBackend) {
+    return nodeRequest('/departments/hierarchy-move', {
+      method: 'POST',
+      body: {
+        department_id: departmentId,
+        parent_department_id: parentDepartmentId || null,
+        sort_index: sortIndex,
+      },
+    });
+  }
+  throw new Error('Hierarchy move is only supported with the Node backend');
+}
+
 export async function deleteDepartment(id) {
   if (useNodeBackend) {
     return nodeRequest(`/departments/${id}`, { method: 'DELETE' });

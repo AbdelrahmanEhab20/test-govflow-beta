@@ -47,7 +47,7 @@ export default function DepartmentMembers({ departmentId }) {
 
   const removeMemberMutation = useMutation({
     mutationFn: async (userId) => {
-      await updateUser(userId, { department_id: '' });
+      await updateUser(userId, { department_id: '', department: '' });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['departmentMembers'] });

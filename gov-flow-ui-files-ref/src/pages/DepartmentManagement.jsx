@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from "react";
 import { getCurrentUser } from "@/api/authApi";
-import { listDepartments, listTeams } from "@/api/departmentsApi";
+import { listDepartments, updateDepartment } from "@/api/departmentsApi";
 import { listUsers } from "@/api/usersApi";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Plus, ArrowLeft } from "lucide-react";
@@ -15,9 +15,18 @@ import TeamMembersView from "../components/team/TeamMembersView";
 import DepartmentsView from "../components/team/DepartmentsView";
 import DepartmentHierarchyView from "../components/team/DepartmentHierarchyView";
 import SectorsView from "../components/team/SectorsView";
+import { useToast } from "@/components/ui/use-toast";
+
+function memberBelongsToDepartment(member, department) {
+  if (department.id && member.department_id === department.id) return true;
+  if (department.name && member.department_name === department.name) return true;
+  return false;
+}
 
 export default function DepartmentManagement() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [editingDept, setEditingDept] = useState(null);
   const [showForm, setShowForm] = useState(false);
@@ -33,24 +42,36 @@ export default function DepartmentManagement() {
     queryFn: () => listDepartments(),
   });
 
-  const { data: teamMembers = [] } = useQuery({
-    queryKey: ['teamMembers'],
-    queryFn: () => listTeams(),
-  });
-
   const { data: users = [] } = useQuery({
     queryKey: ['users'],
     queryFn: () => listUsers(),
   });
 
-  const { data: databaseDepartments = [] } = useQuery({
-    queryKey: ['databaseDepartments'],
-    queryFn: () => listDepartments(),
+  const updateDepartmentMutation = useMutation({
+    mutationFn: ({ id, data }) => updateDepartment(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['departments'] });
+      toast({
+        title: 'Department updated',
+        description: 'Changes were saved successfully.',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Could not save department',
+        description: error?.message || 'Please try again.',
+        variant: 'destructive',
+      });
+    },
   });
+
+  const refreshMemberQueries = () => {
+    queryClient.invalidateQueries({ queryKey: ['users'] });
+    queryClient.invalidateQueries({ queryKey: ['departments'] });
+  };
 
   const hasTeamManagementAccess = ['admin', 'department_admin'].includes(user?.role);
 
-  // Allow admin and department_admin to match backend policy.
   if (user && !hasTeamManagementAccess) {
     return (
       <div className="p-6 lg:p-8">
@@ -64,31 +85,23 @@ export default function DepartmentManagement() {
     );
   }
 
-  const filteredDepartments = departments.filter(dept => {
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      dept.name?.toLowerCase().includes(query) ||
-      dept.sector?.toLowerCase().includes(query) ||
-      dept.manager_name?.toLowerCase().includes(query)
-    );
-  });
+  const normalizedTeamMembers = useMemo(
+    () =>
+      users.map((entry) => ({
+        id: entry.id,
+        name: entry.full_name || entry.email,
+        email: entry.email,
+        job_title: entry.position || '',
+        department_id: entry.department_id || '',
+        department_name: entry.department || '',
+        sector_name: '',
+        mobile_number: entry.phone || '',
+        avatar_url: entry.avatar_url || '',
+      })),
+    [users],
+  );
 
-  const normalizedTeamMembers = useMemo(() => {
-    if (teamMembers.length > 0) return teamMembers;
-    return users.map((user) => ({
-      id: user.id,
-      name: user.full_name || user.email,
-      email: user.email,
-      job_title: user.position || '',
-      department_name: user.department || 'Development',
-      sector_name: '',
-      mobile_number: user.phone || '',
-      avatar_url: user.avatar_url || '',
-    }));
-  }, [teamMembers, users]);
-
-  const filteredTeamMembers = normalizedTeamMembers.filter(member => {
+  const filteredTeamMembers = normalizedTeamMembers.filter((member) => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
@@ -99,45 +112,47 @@ export default function DepartmentManagement() {
     );
   });
 
-  const filteredDepartmentsView = filteredDepartments.map((dept) => ({
-    ...dept,
-    member_count: normalizedTeamMembers.filter((member) => member.department_name === dept.name).length,
-  })).filter(dept => {
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      dept.name?.toLowerCase().includes(query) ||
-      dept.sector?.toLowerCase().includes(query) ||
-      dept.manager_name?.toLowerCase().includes(query)
-    );
-  });
+  const filteredDepartmentsView = departments
+    .filter((dept) => {
+      if (!searchQuery) return true;
+      const query = searchQuery.toLowerCase();
+      return (
+        dept.name?.toLowerCase().includes(query) ||
+        dept.sector?.toLowerCase().includes(query) ||
+        dept.manager_name?.toLowerCase().includes(query)
+      );
+    })
+    .map((dept) => ({
+      ...dept,
+      member_count: normalizedTeamMembers.filter((member) =>
+        memberBelongsToDepartment(member, dept),
+      ).length,
+    }));
 
-  const sectors = Array.from(new Set(
-    normalizedTeamMembers.map(member => member.sector_name).filter(s => s)
-  ))
-    .map(sectorName => ({
+  const sectors = Array.from(
+    new Set(departments.map((dept) => dept.sector).filter(Boolean)),
+  )
+    .map((sectorName) => ({
       name: sectorName,
-      departments: new Set(normalizedTeamMembers
-        .filter(m => m.sector_name === sectorName)
-        .map(m => m.department_name)
-        .filter(d => d)
-      ).size,
-      members: normalizedTeamMembers.filter(m => m.sector_name === sectorName).length
+      departments: departments.filter((dept) => dept.sector === sectorName).length,
+      members: normalizedTeamMembers.filter((member) => {
+        const dept = departments.find((item) => memberBelongsToDepartment(member, item));
+        return dept?.sector === sectorName;
+      }).length,
     }))
     .sort((a, b) => b.members - a.members)
-    .filter(sector => {
+    .filter((sector) => {
       if (!searchQuery) return true;
       return sector.name.toLowerCase().includes(searchQuery.toLowerCase());
     });
 
   const departmentSectorCount = new Set(
-    filteredDepartmentsView.map((dept) => dept.sector).filter(Boolean)
+    filteredDepartmentsView.map((dept) => dept.sector).filter(Boolean),
   ).size;
   const activeDepartmentCount = filteredDepartmentsView.filter((dept) => dept.is_active !== false).length;
 
-  const handleEdit = (dept) => {
-    setEditingDept(dept);
-    setShowForm(true);
+  const handleDepartmentUpdate = async (departmentId, updatedData) => {
+    await updateDepartmentMutation.mutateAsync({ id: departmentId, data: updatedData });
   };
 
   const handleFormClose = () => {
@@ -146,12 +161,12 @@ export default function DepartmentManagement() {
   };
 
   const handleFormSuccess = () => {
+    queryClient.invalidateQueries({ queryKey: ['departments'] });
     handleFormClose();
   };
 
   return (
     <div className="p-6 lg:p-8">
-      {/* Header */}
       <div className="flex items-center gap-4 mb-8">
         <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
           <ArrowLeft className="w-5 h-5" />
@@ -162,7 +177,6 @@ export default function DepartmentManagement() {
         </div>
       </div>
 
-      {/* View Tabs */}
       {!showForm && (
         <div className="flex flex-col sm:flex-row gap-4 mb-8">
           <div className="flex gap-2">
@@ -215,7 +229,6 @@ export default function DepartmentManagement() {
         </div>
       )}
 
-      {/* View Content */}
       {showForm ? (
         <div className="max-w-2xl">
           <DepartmentForm
@@ -228,14 +241,17 @@ export default function DepartmentManagement() {
         <>
           {activeView === 'members' && <TeamMembersView members={filteredTeamMembers} />}
           {activeView === 'departments' && (
-            <DepartmentsView 
-              departments={filteredDepartmentsView} 
+            <DepartmentsView
+              departments={filteredDepartmentsView}
               teamMembers={normalizedTeamMembers}
+              onDepartmentUpdate={handleDepartmentUpdate}
+              onMembersUpdate={refreshMemberQueries}
+              isSavingDepartment={updateDepartmentMutation.isPending}
             />
           )}
           {activeView === 'hierarchy' && (
-            <DepartmentHierarchyView 
-              departments={databaseDepartments} 
+            <DepartmentHierarchyView
+              departments={departments}
               teamMembers={normalizedTeamMembers}
               onDepartmentSelect={(dept) => {
                 setEditingDept(dept);
@@ -247,7 +263,6 @@ export default function DepartmentManagement() {
         </>
       )}
 
-      {/* Stats */}
       {!showForm && (
         <div className="mt-8 p-6 bg-slate-50 dark:bg-slate-900 rounded-lg">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">

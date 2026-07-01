@@ -1,22 +1,29 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card } from "@/components/ui/card";
-import { Mail, Phone, Edit2, X } from "lucide-react";
+import { Edit2 } from "lucide-react";
 import DepartmentMembersManager from "@/components/departments/DepartmentMembersManager";
 
-export default function DepartmentDetailModal({ 
-  department, 
-  teamMembers, 
-  onClose, 
+function memberBelongsToDepartment(member, department) {
+  if (!department) return false;
+  if (department.id && member.department_id === department.id) return true;
+  if (department.name && member.department_name === department.name) return true;
+  return false;
+}
+
+export default function DepartmentDetailModal({
+  department,
+  teamMembers,
+  onClose,
   onSave,
-  isEditing = false 
+  onMembersUpdate,
+  isEditing = false,
+  isSaving = false,
 }) {
   const [editMode, setEditMode] = useState(isEditing);
   const [formData, setFormData] = useState({
@@ -26,18 +33,27 @@ export default function DepartmentDetailModal({
     sector: department?.sector || '',
   });
 
-  const departmentMembers = teamMembers.filter(
-    m => m.department_name === department?.name
+  useEffect(() => {
+    setFormData({
+      name: department?.name || '',
+      description: department?.description || '',
+      manager_name: department?.manager_name || '',
+      sector: department?.sector || '',
+    });
+    setEditMode(isEditing);
+  }, [department?.id, isEditing]);
+
+  const departmentMembers = teamMembers.filter((member) =>
+    memberBelongsToDepartment(member, department),
   );
 
-  const handleSave = () => {
-    onSave(formData);
-    setEditMode(false);
-  };
-
-  const getInitials = (name) => {
-    if (!name) return "?";
-    return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+  const handleSave = async () => {
+    try {
+      await onSave?.(formData);
+      setEditMode(false);
+    } catch {
+      // Keep edit mode open when save fails.
+    }
   };
 
   return (
@@ -53,8 +69,8 @@ export default function DepartmentDetailModal({
                 <p className="text-sm text-slate-500 mt-1">{department?.sector}</p>
               )}
             </div>
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               size="icon"
               onClick={() => setEditMode(!editMode)}
               className="ml-2"
@@ -70,7 +86,6 @@ export default function DepartmentDetailModal({
             <TabsTrigger value="members">Team Members ({departmentMembers.length})</TabsTrigger>
           </TabsList>
 
-          {/* Details Tab */}
           <TabsContent value="details" className="space-y-4">
             {editMode ? (
               <div className="space-y-4">
@@ -79,7 +94,7 @@ export default function DepartmentDetailModal({
                   <Input
                     id="name"
                     value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     className="mt-1"
                   />
                 </div>
@@ -88,7 +103,7 @@ export default function DepartmentDetailModal({
                   <Input
                     id="sector"
                     value={formData.sector}
-                    onChange={(e) => setFormData({...formData, sector: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, sector: e.target.value })}
                     className="mt-1"
                   />
                 </div>
@@ -97,7 +112,7 @@ export default function DepartmentDetailModal({
                   <Input
                     id="manager"
                     value={formData.manager_name}
-                    onChange={(e) => setFormData({...formData, manager_name: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, manager_name: e.target.value })}
                     className="mt-1"
                   />
                 </div>
@@ -106,14 +121,18 @@ export default function DepartmentDetailModal({
                   <Textarea
                     id="description"
                     value={formData.description}
-                    onChange={(e) => setFormData({...formData, description: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     className="mt-1"
                     rows={4}
                   />
                 </div>
                 <div className="flex gap-2 justify-end">
-                  <Button variant="outline" onClick={() => setEditMode(false)}>Cancel</Button>
-                  <Button onClick={handleSave}>Save Changes</Button>
+                  <Button variant="outline" onClick={() => setEditMode(false)} disabled={isSaving}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleSave} disabled={isSaving}>
+                    {isSaving ? 'Saving...' : 'Save Changes'}
+                  </Button>
                 </div>
               </div>
             ) : (
@@ -140,14 +159,12 @@ export default function DepartmentDetailModal({
             )}
           </TabsContent>
 
-          {/* Team Members Tab */}
           <TabsContent value="members" className="space-y-3">
             <DepartmentMembersManager
+              departmentId={department?.id}
               departmentName={department?.name}
               teamMembers={teamMembers}
-              onMembersUpdate={() => {
-                // Refresh the modal if needed
-              }}
+              onMembersUpdate={onMembersUpdate}
             />
           </TabsContent>
         </Tabs>
