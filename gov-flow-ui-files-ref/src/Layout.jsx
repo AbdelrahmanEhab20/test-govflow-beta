@@ -8,6 +8,7 @@ import { listNotificationsForUser } from "@/api/notificationsApi";
 import {
   LayoutDashboard,
   ListTodo,
+  Kanban,
   Mail,
   Calendar,
   Settings,
@@ -57,7 +58,7 @@ const navItems = [
   { name: "About GovFlow", page: "AboutGovFlow", icon: Info },
   { name: "My Dashboard", page: "MyDashboard", icon: LayoutDashboard },
   { name: "Tasks", page: "Tasks", icon: ListTodo },
-  { name: "Kanban Board", page: "KanbanBoard", icon: ListTodo },
+  { name: "Kanban Board", page: "KanbanBoard", icon: Kanban },
   { name: "Email Inbox", page: "EmailInbox", icon: Mail },
   { name: "Calendar", page: "CalendarView", icon: Calendar },
   { name: "Reports", page: "Reports", icon: BarChart3 },
