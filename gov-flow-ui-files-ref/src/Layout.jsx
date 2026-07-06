@@ -15,8 +15,8 @@ import {
   Bell,
   Menu,
   X,
-  ChevronLeft,
-  ChevronRight,
+  PanelLeftClose,
+  PanelLeftOpen,
   ChevronDown,
   LogOut,
   User,
@@ -77,7 +77,13 @@ const adminItems = [
 
 export default function Layout({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
+  const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(() => {
+    try {
+      return localStorage.getItem('desktopSidebarOpen') !== 'false';
+    } catch {
+      return true;
+    }
+  });
   const [notificationPanelOpen, setNotificationPanelOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [activeRole, setActiveRole] = useState(null);
@@ -124,15 +130,6 @@ export default function Layout({ children, currentPageName }) {
     }
     return [];
   };
-
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem('desktopSidebarOpen');
-      if (stored === 'false') setDesktopSidebarOpen(false);
-    } catch {
-      // Ignore storage access issues.
-    }
-  }, []);
 
   useEffect(() => {
     if (user?.role) {
@@ -419,20 +416,6 @@ export default function Layout({ children, currentPageName }) {
             </DropdownMenu>
           </div>
         </div>
-
-        <Button
-          variant="outline"
-          size="icon"
-          className="hidden md:flex absolute -right-3 top-1/2 -translate-y-1/2 z-[60] h-7 w-7 rounded-full bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 shadow-sm"
-          onClick={() => setDesktopSidebarOpen((open) => !open)}
-          aria-label={desktopSidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
-        >
-          {desktopSidebarOpen ? (
-            <ChevronLeft className="w-4 h-4" />
-          ) : (
-            <ChevronRight className="w-4 h-4" />
-          )}
-        </Button>
       </aside>
 
       {/* Main content */}
@@ -440,16 +423,30 @@ export default function Layout({ children, currentPageName }) {
         {/* Top bar */}
         <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30 glass-effect">
           <div className="h-full flex items-center justify-between px-4 lg:px-6">
-            <div className="flex items-center gap-4">
-              <Button 
-                variant="ghost" 
-                size="icon" 
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
                 className="md:hidden"
                 onClick={() => setSidebarOpen(true)}
               >
                 <Menu className="w-5 h-5" />
               </Button>
-              
+
+              <Button
+                variant="ghost"
+                size="icon"
+                className="hidden md:flex"
+                onClick={() => setDesktopSidebarOpen((open) => !open)}
+                aria-label={desktopSidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+                title={desktopSidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+              >
+                {desktopSidebarOpen ? (
+                  <PanelLeftClose className="w-5 h-5 text-slate-600 dark:text-slate-300" />
+                ) : (
+                  <PanelLeftOpen className="w-5 h-5 text-slate-600 dark:text-slate-300" />
+                )}
+              </Button>
             </div>
 
             <div className="flex items-center gap-2">
