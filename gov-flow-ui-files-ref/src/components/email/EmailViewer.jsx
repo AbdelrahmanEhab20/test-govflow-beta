@@ -110,7 +110,7 @@ export default function EmailViewer({
           <div className="flex flex-wrap items-center justify-end gap-2 flex-1 min-w-0">
             <Button 
               onClick={onConvertToTask}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-blue-600 hover:bg-blue-700 text-white"
               size="sm"
             >
               Convert to Task

@@ -113,7 +113,7 @@ export default function WorkflowStageForm({ stage, onSubmit, onCancel, isLoading
         <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading}>
           Cancel
         </Button>
-        <Button type="submit" disabled={isLoading} className="bg-blue-600 hover:bg-blue-700">
+        <Button type="submit" disabled={isLoading} className="bg-blue-600 hover:bg-blue-700 text-white">
           {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
           {stage ? 'Update Stage' : 'Create Stage'}
         </Button>

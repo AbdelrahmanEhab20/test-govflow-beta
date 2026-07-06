@@ -339,7 +339,7 @@ export default function KanbanBoard() {
             <div className="flex gap-3 justify-center">
               <Button
                 onClick={() => navigate(createPageUrl('Settings'))}
-                className="bg-blue-600 hover:bg-blue-700"
+                className="bg-blue-600 hover:bg-blue-700 text-white"
               >
                 Configure Workflow Stages
               </Button>

@@ -236,7 +236,7 @@ export default function NotificationPreferences() {
           <Button
             onClick={handleSave}
             disabled={updateMutation.isPending}
-            className="bg-blue-600 hover:bg-blue-700"
+            className="bg-blue-600 hover:bg-blue-700 text-white"
           >
             {updateMutation.isPending ? 'Saving...' : 'Save Preferences'}
           </Button>

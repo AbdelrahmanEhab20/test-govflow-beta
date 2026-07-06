@@ -222,7 +222,8 @@ export default function Layout({ children, currentPageName }) {
         :root {
           --primary: 220 90% 56%;
           --primary-foreground: 0 0% 100%;
-          --accent: 262 83% 58%;
+          --accent: 220 90% 56%;
+          --accent-foreground: 0 0% 100%;
         }
         .sidebar-item {
           transition: all 0.2s ease;
@@ -418,31 +419,21 @@ export default function Layout({ children, currentPageName }) {
             </DropdownMenu>
           </div>
         </div>
+
+        <Button
+          variant="outline"
+          size="icon"
+          className="hidden md:flex absolute -right-3 top-1/2 -translate-y-1/2 z-[60] h-7 w-7 rounded-full bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 shadow-sm"
+          onClick={() => setDesktopSidebarOpen((open) => !open)}
+          aria-label={desktopSidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+        >
+          {desktopSidebarOpen ? (
+            <ChevronLeft className="w-4 h-4" />
+          ) : (
+            <ChevronRight className="w-4 h-4" />
+          )}
+        </Button>
       </aside>
-
-      {desktopSidebarOpen && (
-        <Button
-          variant="outline"
-          size="icon"
-          className="hidden md:flex fixed left-[275px] top-20 z-[30] h-7 w-7 rounded-full bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 shadow-sm"
-          onClick={() => setDesktopSidebarOpen(false)}
-          aria-label="Collapse sidebar"
-        >
-          <ChevronLeft className="w-4 h-4" />
-        </Button>
-      )}
-
-      {!desktopSidebarOpen && (
-        <Button
-          variant="outline"
-          size="icon"
-          className="hidden md:flex fixed left-[84px] top-20 z-[30] h-8 w-8 rounded-full bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 shadow-sm"
-          onClick={() => setDesktopSidebarOpen(true)}
-          aria-label="Expand sidebar"
-        >
-          <ChevronRight className="w-4 h-4" />
-        </Button>
-      )}
 
       {/* Main content */}
       <div className={`${desktopSidebarOpen ? 'md:pl-72' : 'md:pl-20'} transition-all duration-300`}>

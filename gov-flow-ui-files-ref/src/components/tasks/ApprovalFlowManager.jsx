@@ -142,7 +142,7 @@ export default function ApprovalFlowManager({ taskId, requiresApproval = false, 
                 </Select>
 
                 <div className="flex gap-2">
-                  <Button size="sm" onClick={handleAddApprover} className="bg-blue-600">
+                  <Button size="sm" onClick={handleAddApprover}>
                     Add
                   </Button>
                   <Button size="sm" variant="outline" onClick={() => setShowAddApprover(false)}>
@@ -166,7 +166,7 @@ export default function ApprovalFlowManager({ taskId, requiresApproval = false, 
               <Button
                 onClick={() => submitForApprovalMutation.mutate()}
                 disabled={submitForApprovalMutation.isPending}
-                className="w-full bg-green-600 hover:bg-green-700"
+                className="w-full bg-green-600 hover:bg-green-700 text-white"
               >
                 {submitForApprovalMutation.isPending ? 'Submitting...' : 'Submit for Approval'}
               </Button>

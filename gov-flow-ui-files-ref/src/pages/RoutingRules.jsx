@@ -336,7 +336,7 @@ export default function RoutingRules() {
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                             <AlertDialogAction 
                               onClick={() => deleteMutation.mutate(rule.id)}
-                              className="bg-red-600 hover:bg-red-700"
+                              className="bg-red-600 hover:bg-red-700 text-white"
                             >
                               Delete
                             </AlertDialogAction>

@@ -167,7 +167,10 @@ export default function TaskDetail() {
             {canDeleteTask && (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="outline" className="text-red-600 hover:text-red-700">
+                  <Button
+                    variant="outline"
+                    className="text-red-600 border-red-200 hover:bg-destructive hover:text-destructive-foreground hover:border-destructive"
+                  >
                     <Trash2 className="w-4 h-4 mr-2" />
                     Delete
                   </Button>
@@ -183,7 +186,7 @@ export default function TaskDetail() {
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                     <AlertDialogAction
                       onClick={() => deleteMutation.mutate()}
-                      className="bg-red-600 hover:bg-red-700">
+                      className="bg-red-600 hover:bg-red-700 text-white">
                       Delete
                     </AlertDialogAction>
                   </AlertDialogFooter>

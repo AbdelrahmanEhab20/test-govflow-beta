@@ -275,7 +275,7 @@ export default function Tasks() {
             variant="outline" 
             size="sm" 
             onClick={handleBulkComplete}
-            className="text-emerald-600 border-emerald-200 hover:bg-emerald-50 w-full sm:w-auto"
+            className="text-emerald-600 border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 w-full sm:w-auto"
           >
             <CheckCircle2 className="w-4 h-4 mr-1" />
             Mark Complete
@@ -284,7 +284,7 @@ export default function Tasks() {
             variant="outline" 
             size="sm" 
             onClick={handleBulkDelete}
-            className="text-red-600 border-red-200 hover:bg-red-50 w-full sm:w-auto"
+            className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 hover:border-red-200 w-full sm:w-auto"
           >
             <Trash2 className="w-4 h-4 mr-1" />
             Delete
@@ -343,7 +343,7 @@ export default function Tasks() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction 
               onClick={confirmDelete}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-red-600 hover:bg-red-700 text-white"
             >
               Delete
             </AlertDialogAction>

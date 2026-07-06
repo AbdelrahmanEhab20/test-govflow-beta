@@ -124,7 +124,7 @@ export default function TaskDependencyManager({ taskId, dependencies = [] }) {
             </Select>
 
             <div className="flex gap-2">
-              <Button size="sm" onClick={handleAddDependency} className="bg-blue-600">
+              <Button size="sm" onClick={handleAddDependency}>
                 Add
               </Button>
               <Button size="sm" variant="outline" onClick={() => setShowAddDependency(false)}>

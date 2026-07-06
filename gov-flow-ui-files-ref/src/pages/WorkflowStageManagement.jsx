@@ -118,7 +118,7 @@ export default function WorkflowStageManagement() {
           </CardContent>
         </Card>
       ) : (
-        <Button onClick={() => setShowForm(true)} className="mb-8 bg-blue-600 hover:bg-blue-700">
+        <Button onClick={() => setShowForm(true)} className="mb-8 bg-blue-600 hover:bg-blue-700 text-white">
           <Plus className="w-4 h-4 mr-2" />
           Create Workflow Stage
         </Button>
@@ -180,7 +180,7 @@ export default function WorkflowStageManagement() {
             <AlertDialogAction
               onClick={() => deleteMutation.mutate(deleteConfirm.id)}
               disabled={deleteMutation.isPending}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-red-600 hover:bg-red-700 text-white"
             >
               {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
             </AlertDialogAction>
