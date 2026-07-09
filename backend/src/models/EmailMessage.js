@@ -24,6 +24,7 @@ const EmailMessageSchema = new mongoose.Schema(
     category: { type: String },
     suggested_category: { type: String },
     suggested_priority: { type: String },
+    tags: { type: [String], default: [] },
     has_attachments: { type: Boolean, default: false },
     /** Metadata only (names/sizes); binaries are not stored. Populated by inbox sync where available. */
     attachments: {

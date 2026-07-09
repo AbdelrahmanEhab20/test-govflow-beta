@@ -1,11 +1,19 @@
 import React, { useState } from "react";
-import { listRoutingRules, createRoutingRule, updateRoutingRule, deleteRoutingRule } from "@/api/routingRulesApi";
+import {
+  listRoutingRules,
+  createRoutingRule,
+  updateRoutingRule,
+  deleteRoutingRule,
+  reorderRoutingRules,
+} from "@/api/routingRulesApi";
 import { listUsers } from "@/api/usersApi";
+import { getCurrentUser } from "@/api/authApi";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { 
-  Plus, 
-  Pencil, 
-  Trash2, 
+import { DragDropContext, Draggable, Droppable } from "@hello-pangea/dnd";
+import {
+  Plus,
+  Pencil,
+  Trash2,
   GripVertical,
   Route,
   Mail,
@@ -17,13 +25,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
@@ -47,6 +55,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import EmptyState from "../components/shared/EmptyState";
+import { useRbac } from "@/components/shared/useRbac";
+import { PERMISSIONS } from "@/components/shared/rbac";
 
 const CONDITION_TYPES = [
   { value: "subject_contains", label: "Subject contains", icon: Mail },
@@ -68,6 +78,103 @@ const CATEGORIES = [
 
 const PRIORITIES = ["low", "medium", "high", "urgent"];
 
+function RuleCardContent({
+  rule,
+  index,
+  canEdit,
+  conditionType,
+  actionType,
+  ConditionIcon,
+  ActionIcon,
+  getActionValueDisplay,
+  onToggleActive,
+  onEdit,
+  onDelete,
+  dragHandleProps,
+}) {
+  return (
+    <Card
+      className={`dark:border-slate-700 ${!rule.is_active ? 'opacity-50' : ''}`}
+    >
+      <CardContent className="p-4">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 text-slate-400 dark:text-slate-500">
+            <div {...dragHandleProps}>
+              <GripVertical className={`w-5 h-5 ${canEdit ? 'cursor-grab active:cursor-grabbing' : 'opacity-40'}`} />
+            </div>
+            <span className="text-sm font-mono">#{index + 1}</span>
+          </div>
+
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="font-medium text-slate-900 dark:text-white">{rule.name}</span>
+              {!rule.is_active && (
+                <Badge variant="secondary">Disabled</Badge>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300 flex-wrap">
+              <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded">
+                <ConditionIcon className="w-3 h-3" />
+                <span>If {conditionType?.label.toLowerCase()}</span>
+                <Badge variant="outline" className="ml-1">{rule.condition_value}</Badge>
+              </div>
+              <span>→</span>
+              <div className="flex items-center gap-1 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded text-blue-700 dark:text-blue-300">
+                <ActionIcon className="w-3 h-3" />
+                <span>{actionType?.label}:</span>
+                <Badge variant="secondary" className="ml-1">
+                  {getActionValueDisplay(rule)}
+                </Badge>
+              </div>
+            </div>
+          </div>
+
+          {canEdit && (
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={rule.is_active}
+                onCheckedChange={() => onToggleActive(rule)}
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => onEdit(rule)}
+              >
+                <Pencil className="w-4 h-4" />
+              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="ghost" size="icon" className="text-red-600">
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Rule</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete this rule?
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => onDelete(rule.id)}
+                      className="bg-red-600 hover:bg-red-700 text-white"
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function RoutingRules() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingRule, setEditingRule] = useState(null);
@@ -81,6 +188,14 @@ export default function RoutingRules() {
   });
 
   const queryClient = useQueryClient();
+
+  const { data: currentUser } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: () => getCurrentUser(),
+  });
+
+  const { hasPermission } = useRbac(currentUser?.role);
+  const canEdit = hasPermission(currentUser?.role, PERMISSIONS.ROUTING_EDIT);
 
   const { data: rules = [], isLoading } = useQuery({
     queryKey: ['routingRules'],
@@ -110,6 +225,11 @@ export default function RoutingRules() {
 
   const deleteMutation = useMutation({
     mutationFn: (id) => deleteRoutingRule(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['routingRules'] }),
+  });
+
+  const reorderMutation = useMutation({
+    mutationFn: (orderedIds) => reorderRoutingRules(orderedIds),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['routingRules'] }),
   });
 
@@ -159,6 +279,20 @@ export default function RoutingRules() {
     });
   };
 
+  const handleDragEnd = (result) => {
+    if (!canEdit || !result.destination) return;
+    const sourceIndex = result.source.index;
+    const destIndex = result.destination.index;
+    if (sourceIndex === destIndex) return;
+
+    const reordered = Array.from(rules);
+    const [moved] = reordered.splice(sourceIndex, 1);
+    reordered.splice(destIndex, 0, moved);
+
+    queryClient.setQueryData(['routingRules'], reordered);
+    reorderMutation.mutate(reordered.map((rule) => rule.id));
+  };
+
   const getActionValueDisplay = (rule) => {
     if (rule.action_type === 'assign_to') {
       const user = users.find(u => u.id === rule.action_value);
@@ -171,8 +305,8 @@ export default function RoutingRules() {
     switch (formData.action_type) {
       case 'assign_to':
         return (
-          <Select 
-            value={formData.action_value} 
+          <Select
+            value={formData.action_value}
             onValueChange={(value) => setFormData({ ...formData, action_value: value })}
           >
             <SelectTrigger>
@@ -189,8 +323,8 @@ export default function RoutingRules() {
         );
       case 'set_category':
         return (
-          <Select 
-            value={formData.action_value} 
+          <Select
+            value={formData.action_value}
             onValueChange={(value) => setFormData({ ...formData, action_value: value })}
           >
             <SelectTrigger>
@@ -207,8 +341,8 @@ export default function RoutingRules() {
         );
       case 'set_priority':
         return (
-          <Select 
-            value={formData.action_value} 
+          <Select
+            value={formData.action_value}
             onValueChange={(value) => setFormData({ ...formData, action_value: value })}
           >
             <SelectTrigger>
@@ -234,22 +368,47 @@ export default function RoutingRules() {
     }
   };
 
+  const renderRuleCard = (rule, index, dragHandleProps = {}) => {
+    const conditionType = CONDITION_TYPES.find(t => t.value === rule.condition_type);
+    const actionType = ACTION_TYPES.find(t => t.value === rule.action_type);
+    const ConditionIcon = conditionType?.icon || Mail;
+    const ActionIcon = actionType?.icon || Tag;
+
+    return (
+      <RuleCardContent
+        key={rule.id}
+        rule={rule}
+        index={index}
+        canEdit={canEdit}
+        conditionType={conditionType}
+        actionType={actionType}
+        ConditionIcon={ConditionIcon}
+        ActionIcon={ActionIcon}
+        getActionValueDisplay={getActionValueDisplay}
+        onToggleActive={handleToggleActive}
+        onEdit={handleEdit}
+        onDelete={(id) => deleteMutation.mutate(id)}
+        dragHandleProps={dragHandleProps}
+      />
+    );
+  };
+
   return (
     <div className="p-6 lg:p-8 dark:bg-slate-950 min-h-screen">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Email Routing Rules</h1>
           <p className="text-slate-500 dark:text-slate-300 mt-1">Auto-categorize and assign incoming emails</p>
         </div>
-        
-        <Button onClick={() => setDialogOpen(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Add Rule
-        </Button>
+
+        {canEdit && (
+          <Button onClick={() => setDialogOpen(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Add Rule
+          </Button>
+        )}
       </div>
 
-      {/* Rules List */}
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
@@ -259,202 +418,145 @@ export default function RoutingRules() {
           icon={Route}
           title="No routing rules"
           description="Create rules to automatically categorize and assign incoming emails"
-          action={() => setDialogOpen(true)}
-          actionLabel="Add First Rule"
+          action={canEdit ? () => setDialogOpen(true) : undefined}
+          actionLabel={canEdit ? "Add First Rule" : undefined}
         />
+      ) : canEdit ? (
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <Droppable droppableId="routing-rules">
+            {(provided) => (
+              <div
+                ref={provided.innerRef}
+                {...provided.droppableProps}
+                className="space-y-3"
+              >
+                {rules.map((rule, index) => (
+                  <Draggable key={rule.id} draggableId={rule.id} index={index}>
+                    {(draggableProvided) => (
+                      <div
+                        ref={draggableProvided.innerRef}
+                        {...draggableProvided.draggableProps}
+                      >
+                        {renderRuleCard(rule, index, draggableProvided.dragHandleProps)}
+                      </div>
+                    )}
+                  </Draggable>
+                ))}
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
       ) : (
         <div className="space-y-3">
-          {rules.map((rule, index) => {
-            const conditionType = CONDITION_TYPES.find(t => t.value === rule.condition_type);
-            const actionType = ACTION_TYPES.find(t => t.value === rule.action_type);
-            const ConditionIcon = conditionType?.icon || Mail;
-            const ActionIcon = actionType?.icon || Tag;
-
-            return (
-              <Card 
-                key={rule.id}
-                className={`dark:border-slate-700 ${!rule.is_active ? 'opacity-50' : ''}`}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2 text-slate-400 dark:text-slate-500">
-                      <GripVertical className="w-5 h-5 cursor-move" />
-                      <span className="text-sm font-mono">#{index + 1}</span>
-                    </div>
-
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="font-medium text-slate-900 dark:text-white">{rule.name}</span>
-                        {!rule.is_active && (
-                          <Badge variant="secondary">Disabled</Badge>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
-                        <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded">
-                          <ConditionIcon className="w-3 h-3" />
-                          <span>If {conditionType?.label.toLowerCase()}</span>
-                          <Badge variant="outline" className="ml-1">{rule.condition_value}</Badge>
-                        </div>
-                        <span>→</span>
-                        <div className="flex items-center gap-1 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded text-blue-700 dark:text-blue-300">
-                          <ActionIcon className="w-3 h-3" />
-                          <span>{actionType?.label}:</span>
-                          <Badge variant="secondary" className="ml-1">
-                            {getActionValueDisplay(rule)}
-                          </Badge>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Switch
-                        checked={rule.is_active}
-                        onCheckedChange={() => handleToggleActive(rule)}
-                      />
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        onClick={() => handleEdit(rule)}
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="text-red-600">
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Delete Rule</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Are you sure you want to delete this rule?
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction 
-                              onClick={() => deleteMutation.mutate(rule.id)}
-                              className="bg-red-600 hover:bg-red-700 text-white"
-                            >
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+          {rules.map((rule, index) => renderRuleCard(rule, index))}
         </div>
       )}
 
-      {/* Add/Edit Rule Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={(open) => {
-        if (!open) resetForm();
-        else setDialogOpen(open);
-      }}>
-        <DialogContent className="sm:max-w-lg dark:bg-slate-800 dark:border-slate-700">
-          <DialogHeader>
-            <DialogTitle className="dark:text-white">
-              {editingRule ? 'Edit Rule' : 'Add Routing Rule'}
-            </DialogTitle>
-            <DialogDescription className="dark:text-slate-400">
-              Define conditions and actions for automatic email processing
-            </DialogDescription>
-          </DialogHeader>
+      {canEdit && (
+        <Dialog open={dialogOpen} onOpenChange={(open) => {
+          if (!open) resetForm();
+          else setDialogOpen(open);
+        }}>
+          <DialogContent className="sm:max-w-lg dark:bg-slate-800 dark:border-slate-700">
+            <DialogHeader>
+              <DialogTitle className="dark:text-white">
+                {editingRule ? 'Edit Rule' : 'Add Routing Rule'}
+              </DialogTitle>
+              <DialogDescription className="dark:text-slate-400">
+                Define conditions and actions for automatic email processing
+              </DialogDescription>
+            </DialogHeader>
 
-          <div className="space-y-4 py-4">
-            <div>
-              <Label className="dark:text-slate-200">Rule Name</Label>
-              <Input
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="e.g., Assign UN Tourism emails"
-                className="mt-1.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-              />
-            </div>
-
-            <div className="p-4 bg-slate-50 dark:bg-slate-700 rounded-lg space-y-4">
-              <p className="text-sm font-medium text-slate-700 dark:text-slate-200">When email...</p>
-              
+            <div className="space-y-4 py-4">
               <div>
-                <Label className="dark:text-slate-200">Condition Type</Label>
-                <Select 
-                  value={formData.condition_type} 
-                  onValueChange={(value) => setFormData({ ...formData, condition_type: value })}
-                >
-                  <SelectTrigger className="mt-1.5 dark:bg-slate-600 dark:border-slate-500 dark:text-white">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CONDITION_TYPES.map(type => (
-                      <SelectItem key={type.value} value={type.value}>
-                        {type.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label className="dark:text-slate-200">Condition Value</Label>
+                <Label className="dark:text-slate-200">Rule Name</Label>
                 <Input
-                  value={formData.condition_value}
-                  onChange={(e) => setFormData({ ...formData, condition_value: e.target.value })}
-                  placeholder="e.g., minutes, محضر, untourism.org"
-                  className="mt-1.5 dark:bg-slate-600 dark:border-slate-500 dark:text-white"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="e.g., Assign UN Tourism emails"
+                  className="mt-1.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
                 />
               </div>
-            </div>
 
-            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg space-y-4">
-              <p className="text-sm font-medium text-blue-700 dark:text-blue-300">Then...</p>
-              
-              <div>
-                <Label className="dark:text-slate-200">Action Type</Label>
-                <Select 
-                   value={formData.action_type} 
-                   onValueChange={(value) => setFormData({ ...formData, action_type: value, action_value: '' })}
-                 >
-                   <SelectTrigger className="mt-1.5 dark:bg-slate-600 dark:border-slate-500 dark:text-white">
-                     <SelectValue />
-                   </SelectTrigger>
-                  <SelectContent>
-                    {ACTION_TYPES.map(type => (
-                      <SelectItem key={type.value} value={type.value}>
-                        {type.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="p-4 bg-slate-50 dark:bg-slate-700 rounded-lg space-y-4">
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-200">When email...</p>
+
+                <div>
+                  <Label className="dark:text-slate-200">Condition Type</Label>
+                  <Select
+                    value={formData.condition_type}
+                    onValueChange={(value) => setFormData({ ...formData, condition_type: value })}
+                  >
+                    <SelectTrigger className="mt-1.5 dark:bg-slate-600 dark:border-slate-500 dark:text-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CONDITION_TYPES.map(type => (
+                        <SelectItem key={type.value} value={type.value}>
+                          {type.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="dark:text-slate-200">Condition Value</Label>
+                  <Input
+                    value={formData.condition_value}
+                    onChange={(e) => setFormData({ ...formData, condition_value: e.target.value })}
+                    placeholder="e.g., minutes, محضر, untourism.org"
+                    className="mt-1.5 dark:bg-slate-600 dark:border-slate-500 dark:text-white"
+                  />
+                </div>
               </div>
 
-              <div>
-                <Label className="dark:text-slate-200">Action Value</Label>
-                <div className="mt-1.5">
-                  {renderActionValueInput()}
+              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg space-y-4">
+                <p className="text-sm font-medium text-blue-700 dark:text-blue-300">Then...</p>
+
+                <div>
+                  <Label className="dark:text-slate-200">Action Type</Label>
+                  <Select
+                    value={formData.action_type}
+                    onValueChange={(value) => setFormData({ ...formData, action_type: value, action_value: '' })}
+                  >
+                    <SelectTrigger className="mt-1.5 dark:bg-slate-600 dark:border-slate-500 dark:text-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ACTION_TYPES.map(type => (
+                        <SelectItem key={type.value} value={type.value}>
+                          {type.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="dark:text-slate-200">Action Value</Label>
+                  <div className="mt-1.5">
+                    {renderActionValueInput()}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={resetForm}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleSubmit}
-              disabled={!formData.name || !formData.condition_value || !formData.action_value}
-            >
-              {editingRule ? 'Update Rule' : 'Create Rule'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <DialogFooter>
+              <Button variant="outline" onClick={resetForm}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSubmit}
+                disabled={!formData.name || !formData.condition_value || !formData.action_value}
+              >
+                {editingRule ? 'Update Rule' : 'Create Rule'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

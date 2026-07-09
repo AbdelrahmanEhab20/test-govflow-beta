@@ -10,6 +10,10 @@ import {
   callGraph,
   refreshMicrosoftAccessToken,
 } from '../services/microsoftGraphService.js';
+import {
+  loadActiveRoutingRules,
+  applyRoutingRulesToEmail,
+} from '../services/routingEngine.js';
 
 const router = Router();
 
@@ -299,6 +303,7 @@ router.post(
 
     let inserted = 0;
     let updated = 0;
+    const activeRules = await loadActiveRoutingRules();
 
     for (const message of items) {
       let attachmentMeta = [];
@@ -323,7 +328,15 @@ router.post(
 
       const nextDoc = mapGraphMessageToEmail({ message, mailbox });
       nextDoc.attachments = attachmentMeta;
-      const exists = await EmailMessage.exists({ id: nextDoc.id, tenantId: config.defaultTenantId });
+      const exists = await EmailMessage.findOne({
+        id: nextDoc.id,
+        tenantId: config.defaultTenantId,
+      })
+        .lean()
+        .exec();
+      const mergedDoc = exists ? { ...exists, ...nextDoc } : nextDoc;
+      const routingPatch = applyRoutingRulesToEmail(mergedDoc, activeRules);
+
       await EmailMessage.findOneAndUpdate(
         { id: nextDoc.id, tenantId: config.defaultTenantId },
         {
@@ -344,6 +357,7 @@ router.post(
             category: nextDoc.category,
             suggested_category: nextDoc.suggested_category,
             updated_date: nextDoc.updated_date,
+            ...routingPatch,
           },
           $setOnInsert: {
             id: nextDoc.id,

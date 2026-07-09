@@ -32,3 +32,18 @@ export async function deleteRoutingRule(id) {
   }
   return base44.entities.RoutingRule.delete(id);
 }
+
+export async function reorderRoutingRules(orderedIds) {
+  if (useNodeBackend) {
+    return nodeRequest('/routing-rules/reorder', {
+      method: 'POST',
+      body: { orderedIds },
+    });
+  }
+  await Promise.all(
+    orderedIds.map((id, index) =>
+      base44.entities.RoutingRule.update(id, { order: index }),
+    ),
+  );
+  return listRoutingRules('order');
+}

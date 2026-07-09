@@ -6,6 +6,7 @@ import {
   createRoutingRule,
   updateRoutingRule,
   deleteRoutingRule,
+  reorderRoutingRules,
 } from '../services/routingRulesService.js';
 
 const router = Router();
@@ -21,13 +22,27 @@ router.get(
   }),
 );
 
+// POST /routing-rules/reorder
+router.post(
+  '/routing-rules/reorder',
+  requireAuth,
+  requireRole('admin', 'department_admin', 'editor'),
+  asyncHandler(async (req, res) => {
+    const { orderedIds } = req.body || {};
+    const rules = await reorderRoutingRules(orderedIds);
+    res.json(rules);
+  }),
+);
+
 // POST /routing-rules
 router.post(
   '/routing-rules',
   requireAuth,
   requireRole('admin', 'department_admin', 'editor'),
   asyncHandler(async (req, res) => {
-    const created = await createRoutingRule(req.body || {});
+    const created = await createRoutingRule(req.body || {}, {
+      actorUserId: req.user?.id,
+    });
     res.status(201).json(created);
   }),
 );
@@ -38,7 +53,9 @@ router.patch(
   requireAuth,
   requireRole('admin', 'department_admin', 'editor'),
   asyncHandler(async (req, res) => {
-    const updated = await updateRoutingRule(req.params.id, req.body || {});
+    const updated = await updateRoutingRule(req.params.id, req.body || {}, {
+      actorUserId: req.user?.id,
+    });
     res.json(updated);
   }),
 );

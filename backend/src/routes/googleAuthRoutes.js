@@ -10,6 +10,10 @@ import {
   refreshGoogleAccessToken,
   callGoogleApi,
 } from '../services/googleGmailService.js';
+import {
+  loadActiveRoutingRules,
+  applyRoutingRulesToEmail,
+} from '../services/routingEngine.js';
 
 const router = Router();
 
@@ -325,6 +329,7 @@ router.post(
 
     let inserted = 0;
     let updated = 0;
+    const activeRules = await loadActiveRoutingRules();
 
     for (const item of messageIds) {
       const message = await callGoogleApi(
@@ -332,7 +337,14 @@ router.post(
         `https://gmail.googleapis.com/gmail/v1/users/me/messages/${item.id}?format=full`,
       );
       const nextDoc = mapGoogleMessageToEmail({ message, mailbox });
-      const exists = await EmailMessage.exists({ id: nextDoc.id, tenantId: config.defaultTenantId });
+      const exists = await EmailMessage.findOne({
+        id: nextDoc.id,
+        tenantId: config.defaultTenantId,
+      })
+        .lean()
+        .exec();
+      const mergedDoc = exists ? { ...exists, ...nextDoc } : nextDoc;
+      const routingPatch = applyRoutingRulesToEmail(mergedDoc, activeRules);
 
       await EmailMessage.findOneAndUpdate(
         { id: nextDoc.id, tenantId: config.defaultTenantId },
@@ -352,6 +364,7 @@ router.post(
             has_attachments: nextDoc.has_attachments,
             attachments: nextDoc.attachments || [],
             updated_date: nextDoc.updated_date,
+            ...routingPatch,
           },
           $setOnInsert: {
             id: nextDoc.id,
