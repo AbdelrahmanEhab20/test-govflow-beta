@@ -68,7 +68,7 @@ const CONDITION_TYPES = [
 ];
 
 const ACTION_TYPES = [
-  { value: "assign_to", label: "Assign to user", icon: User },
+  { value: "assign_to", label: "Create task & assign to user", icon: User },
   { value: "set_category", label: "Set category", icon: Tag },
   { value: "add_tag", label: "Add tag", icon: Tag },
   { value: "set_priority", label: "Set priority", icon: Flag },

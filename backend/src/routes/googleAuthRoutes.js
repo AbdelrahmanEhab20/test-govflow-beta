@@ -344,7 +344,7 @@ router.post(
         .lean()
         .exec();
       const mergedDoc = exists ? { ...exists, ...nextDoc } : nextDoc;
-      const routingPatch = applyRoutingRulesToEmail(mergedDoc, activeRules);
+      const routingPatch = await applyRoutingRulesToEmail(mergedDoc, activeRules);
 
       await EmailMessage.findOneAndUpdate(
         { id: nextDoc.id, tenantId: config.defaultTenantId },

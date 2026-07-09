@@ -1,4 +1,11 @@
+import { config } from '../config/index.js';
+import { User } from '../models/index.js';
 import { listRoutingRules } from './routingRulesService.js';
+import { createTask } from './tasksService.js';
+
+function withTenant(filter = {}) {
+  return { tenantId: config.defaultTenantId, ...filter };
+}
 
 function normalize(value) {
   return String(value || '').toLowerCase();
@@ -41,6 +48,7 @@ export function applyAction(rule, emailDoc) {
 
   switch (actionType) {
     case 'assign_to':
+      // Sync path uses applyAssignToAction (creates task). Fallback for callers that only need metadata.
       return {
         assigned_to_user_id: actionValue,
         status_in_system: 'triaged',
@@ -66,19 +74,54 @@ export function applyAction(rule, emailDoc) {
   }
 }
 
+async function applyAssignToAction(emailDoc, rule) {
+  const assigneeId = rule.action_value;
+  if (!assigneeId) return {};
+
+  if (emailDoc.linked_task_id) {
+    return {
+      assigned_to_user_id: assigneeId,
+      linked_task_id: emailDoc.linked_task_id,
+      status_in_system: emailDoc.status_in_system || 'converted',
+    };
+  }
+
+  const user = await User.findOne(withTenant({ id: assigneeId })).lean();
+  const task = await createTask({
+    pillar: (emailDoc.subject || '(no subject)').trim(),
+    brief_description: (emailDoc.body_preview || emailDoc.body_text || '').slice(0, 4000),
+    lead_user_id: assigneeId,
+    lead_user_name: user?.full_name || user?.email || '',
+    priority: emailDoc.suggested_priority || 'medium',
+    source_email_id: emailDoc.id,
+    status: 'not_started',
+    tags: Array.isArray(emailDoc.tags) ? [...emailDoc.tags] : [],
+  });
+
+  return {
+    assigned_to_user_id: assigneeId,
+    linked_task_id: task.id,
+    status_in_system: 'converted',
+  };
+}
+
 /**
  * Apply the first matching active rule to an email document.
  * Returns a patch object to merge into the upsert $set.
+ * assign_to creates a Task and links the email (converted).
  */
-export function applyRoutingRulesToEmail(emailDoc, rules) {
+export async function applyRoutingRulesToEmail(emailDoc, rules) {
   const activeRules = Array.isArray(rules)
     ? rules.filter((rule) => rule.is_active)
     : [];
 
   for (const rule of activeRules) {
-    if (matchesCondition(rule, emailDoc)) {
-      return applyAction(rule, emailDoc);
+    if (!matchesCondition(rule, emailDoc)) continue;
+
+    if (rule.action_type === 'assign_to') {
+      return applyAssignToAction(emailDoc, rule);
     }
+    return applyAction(rule, emailDoc);
   }
   return {};
 }
