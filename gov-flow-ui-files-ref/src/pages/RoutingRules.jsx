@@ -20,7 +20,9 @@ import {
   User,
   Tag,
   Flag,
-  Loader2
+  Loader2,
+  ArrowDown,
+  Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -302,6 +304,7 @@ export default function RoutingRules() {
   };
 
   const renderActionValueInput = () => {
+    const fieldClass = "h-10 dark:bg-slate-800 dark:border-slate-600 dark:text-white";
     switch (formData.action_type) {
       case 'assign_to':
         return (
@@ -309,7 +312,7 @@ export default function RoutingRules() {
             value={formData.action_value}
             onValueChange={(value) => setFormData({ ...formData, action_value: value })}
           >
-            <SelectTrigger>
+            <SelectTrigger className={fieldClass}>
               <SelectValue placeholder="Select user" />
             </SelectTrigger>
             <SelectContent>
@@ -327,7 +330,7 @@ export default function RoutingRules() {
             value={formData.action_value}
             onValueChange={(value) => setFormData({ ...formData, action_value: value })}
           >
-            <SelectTrigger>
+            <SelectTrigger className={fieldClass}>
               <SelectValue placeholder="Select category" />
             </SelectTrigger>
             <SelectContent>
@@ -345,7 +348,7 @@ export default function RoutingRules() {
             value={formData.action_value}
             onValueChange={(value) => setFormData({ ...formData, action_value: value })}
           >
-            <SelectTrigger>
+            <SelectTrigger className={fieldClass}>
               <SelectValue placeholder="Select priority" />
             </SelectTrigger>
             <SelectContent>
@@ -362,7 +365,8 @@ export default function RoutingRules() {
           <Input
             value={formData.action_value}
             onChange={(e) => setFormData({ ...formData, action_value: e.target.value })}
-            placeholder="Enter value"
+            placeholder="Enter tag name"
+            className={fieldClass}
           />
         );
     }
@@ -458,98 +462,153 @@ export default function RoutingRules() {
           if (!open) resetForm();
           else setDialogOpen(open);
         }}>
-          <DialogContent className="sm:max-w-lg dark:bg-slate-800 dark:border-slate-700">
-            <DialogHeader>
-              <DialogTitle className="dark:text-white">
-                {editingRule ? 'Edit Rule' : 'Add Routing Rule'}
-              </DialogTitle>
-              <DialogDescription className="dark:text-slate-400">
-                Define conditions and actions for automatic email processing
-              </DialogDescription>
-            </DialogHeader>
+          <DialogContent className="sm:max-w-lg p-0 gap-0 flex flex-col max-h-[min(85vh,680px)] overflow-hidden rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-900 shadow-xl">
+            <div className="shrink-0 border-b border-slate-200 dark:border-slate-700 px-6 pt-6 pb-4 pr-12 bg-gradient-to-r from-slate-50 to-white dark:from-slate-900 dark:to-slate-900">
+              <DialogHeader className="space-y-2 text-left">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <Route className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <DialogTitle className="text-xl dark:text-white">
+                      {editingRule ? 'Edit Rule' : 'Add Routing Rule'}
+                    </DialogTitle>
+                    <DialogDescription className="mt-1 dark:text-slate-400">
+                      Define when an email matches and what happens automatically
+                    </DialogDescription>
+                  </div>
+                </div>
+              </DialogHeader>
+            </div>
 
-            <div className="space-y-4 py-4">
-              <div>
-                <Label className="dark:text-slate-200">Rule Name</Label>
+            <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-5">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium dark:text-slate-200">Rule name</Label>
                 <Input
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="e.g., Assign UN Tourism emails"
-                  className="mt-1.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                  className="h-10 dark:bg-slate-800 dark:border-slate-600 dark:text-white"
                 />
               </div>
 
-              <div className="p-4 bg-slate-50 dark:bg-slate-700 rounded-lg space-y-4">
-                <p className="text-sm font-medium text-slate-700 dark:text-slate-200">When email...</p>
-
-                <div>
-                  <Label className="dark:text-slate-200">Condition Type</Label>
-                  <Select
-                    value={formData.condition_type}
-                    onValueChange={(value) => setFormData({ ...formData, condition_type: value })}
-                  >
-                    <SelectTrigger className="mt-1.5 dark:bg-slate-600 dark:border-slate-500 dark:text-white">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CONDITION_TYPES.map(type => (
-                        <SelectItem key={type.value} value={type.value}>
-                          {type.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 overflow-hidden">
+                <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-700 px-4 py-3 bg-slate-50/80 dark:bg-slate-800">
+                  <Badge variant="secondary" className="font-mono text-[10px] uppercase tracking-wider px-2 py-0.5">
+                    If
+                  </Badge>
+                  <span className="text-sm font-medium text-slate-700 dark:text-slate-200">When email matches</span>
                 </div>
-
-                <div>
-                  <Label className="dark:text-slate-200">Condition Value</Label>
-                  <Input
-                    value={formData.condition_value}
-                    onChange={(e) => setFormData({ ...formData, condition_value: e.target.value })}
-                    placeholder="e.g., minutes, محضر, untourism.org"
-                    className="mt-1.5 dark:bg-slate-600 dark:border-slate-500 dark:text-white"
-                  />
+                <div className="p-4 space-y-4">
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      Condition type
+                    </Label>
+                    <Select
+                      value={formData.condition_type}
+                      onValueChange={(value) => setFormData({ ...formData, condition_type: value })}
+                    >
+                      <SelectTrigger className="h-10 dark:bg-slate-800 dark:border-slate-600 dark:text-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {CONDITION_TYPES.map(type => (
+                          <SelectItem key={type.value} value={type.value}>
+                            {type.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      Condition value
+                    </Label>
+                    <Input
+                      value={formData.condition_value}
+                      onChange={(e) => setFormData({ ...formData, condition_value: e.target.value })}
+                      placeholder="e.g., minutes, محضر, untourism.org"
+                      className="h-10 dark:bg-slate-800 dark:border-slate-600 dark:text-white"
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg space-y-4">
-                <p className="text-sm font-medium text-blue-700 dark:text-blue-300">Then...</p>
-
-                <div>
-                  <Label className="dark:text-slate-200">Action Type</Label>
-                  <Select
-                    value={formData.action_type}
-                    onValueChange={(value) => setFormData({ ...formData, action_type: value, action_value: '' })}
-                  >
-                    <SelectTrigger className="mt-1.5 dark:bg-slate-600 dark:border-slate-500 dark:text-white">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {ACTION_TYPES.map(type => (
-                        <SelectItem key={type.value} value={type.value}>
-                          {type.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              <div className="flex justify-center -my-1">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-400">
+                  <ArrowDown className="h-4 w-4" />
                 </div>
+              </div>
 
-                <div>
-                  <Label className="dark:text-slate-200">Action Value</Label>
-                  <div className="mt-1.5">
+              <div className="rounded-xl border border-primary/20 dark:border-primary/30 bg-primary/[0.03] dark:bg-primary/5 overflow-hidden">
+                <div className="flex items-center gap-2 border-b border-primary/10 dark:border-primary/20 px-4 py-3 bg-primary/5 dark:bg-primary/10">
+                  <Badge className="font-mono text-[10px] uppercase tracking-wider px-2 py-0.5 bg-primary text-primary-foreground">
+                    Then
+                  </Badge>
+                  <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Apply this action</span>
+                </div>
+                <div className="p-4 space-y-4">
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      Action type
+                    </Label>
+                    <Select
+                      value={formData.action_type}
+                      onValueChange={(value) => setFormData({ ...formData, action_type: value, action_value: '' })}
+                    >
+                      <SelectTrigger className="h-10 dark:bg-slate-800 dark:border-slate-600 dark:text-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ACTION_TYPES.map(type => (
+                          <SelectItem key={type.value} value={type.value}>
+                            {type.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      Action value
+                    </Label>
                     {renderActionValueInput()}
                   </div>
                 </div>
               </div>
+
+              {formData.name && formData.condition_value && formData.action_value && (
+                <div className="rounded-lg border border-dashed border-slate-300 dark:border-slate-600 bg-slate-50/50 dark:bg-slate-800/30 px-4 py-3">
+                  <div className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300">
+                    <Zap className="h-4 w-4 shrink-0 mt-0.5 text-amber-500" />
+                    <p>
+                      <span className="font-medium text-slate-900 dark:text-white">{formData.name}</span>
+                      {' — '}
+                      If {CONDITION_TYPES.find(t => t.value === formData.condition_type)?.label.toLowerCase()}{' '}
+                      <span className="font-mono text-xs bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 rounded">
+                        {formData.condition_value}
+                      </span>
+                      {' → '}
+                      {ACTION_TYPES.find(t => t.value === formData.action_type)?.label.toLowerCase()}{' '}
+                      <span className="font-mono text-xs bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 rounded">
+                        {formData.action_type === 'assign_to'
+                          ? (users.find(u => u.id === formData.action_value)?.full_name || formData.action_value)
+                          : formData.action_value}
+                      </span>
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
-            <DialogFooter>
-              <Button variant="outline" onClick={resetForm}>
+            <DialogFooter className="shrink-0 border-t border-slate-200 dark:border-slate-700 px-6 py-4 bg-slate-50/90 dark:bg-slate-900/90 sm:justify-end gap-2">
+              <Button variant="outline" onClick={resetForm} className="min-w-[96px]">
                 Cancel
               </Button>
               <Button
                 onClick={handleSubmit}
                 disabled={!formData.name || !formData.condition_value || !formData.action_value}
+                className="min-w-[120px]"
               >
                 {editingRule ? 'Update Rule' : 'Create Rule'}
               </Button>
