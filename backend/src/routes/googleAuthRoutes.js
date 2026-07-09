@@ -365,11 +365,13 @@ router.post(
             attachments: nextDoc.attachments || [],
             updated_date: nextDoc.updated_date,
             ...routingPatch,
+            ...(!exists && !routingPatch.status_in_system
+              ? { status_in_system: 'new' }
+              : {}),
           },
           $setOnInsert: {
             id: nextDoc.id,
             tenantId: nextDoc.tenantId,
-            status_in_system: 'new',
             is_starred: false,
             created_date: nextDoc.created_date,
           },
