@@ -15,12 +15,14 @@ import { Label } from "@/components/ui/label";
 import { Mail, Plus, Check, Trash2, Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import AddMailboxDialog from "./AddMailboxDialog";
+import ConfirmDeleteDialog from "@/components/shared/ConfirmDeleteDialog";
 
 export default function MailboxSelector({ user, activeMailbox, onMailboxChange }) {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editMailbox, setEditMailbox] = useState(null);
   const [editDisplayName, setEditDisplayName] = useState("");
+  const [mailboxToDelete, setMailboxToDelete] = useState(null);
   const queryClient = useQueryClient();
   const mailboxes = user?.mailboxes || [];
 
@@ -152,7 +154,7 @@ export default function MailboxSelector({ user, activeMailbox, onMailboxChange }
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        deleteMailboxMutation.mutate(mailbox.id);
+                        setMailboxToDelete(mailbox);
                       }}
                       className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded text-slate-400 dark:text-slate-500 hover:text-red-600 dark:hover:text-red-400 transition-colors"
                     >
@@ -225,6 +227,21 @@ export default function MailboxSelector({ user, activeMailbox, onMailboxChange }
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDeleteDialog
+        open={Boolean(mailboxToDelete)}
+        onOpenChange={(open) => !open && setMailboxToDelete(null)}
+        title="Remove mailbox?"
+        description={`Remove ${mailboxToDelete?.email}? The connection will be disconnected. Previously synced emails may remain in the inbox.`}
+        confirmLabel="Remove mailbox"
+        onConfirm={() => {
+          if (mailboxToDelete?.id) {
+            deleteMailboxMutation.mutate(mailboxToDelete.id);
+          }
+          setMailboxToDelete(null);
+        }}
+        isPending={deleteMailboxMutation.isPending}
+      />
     </>
   );
 }

@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Edit2, Trash2, Eraser } from "lucide-react";
 import DepartmentMembersManager from "@/components/departments/DepartmentMembersManager";
+import ConfirmDeleteDialog from "@/components/shared/ConfirmDeleteDialog";
 
 function memberBelongsToDepartment(member, department) {
   if (!department) return false;
@@ -28,8 +29,10 @@ export default function DepartmentDetailModal({
   onEditFull,
   onDelete,
   onClearDetails,
+  isDeleting = false,
 }) {
   const [editMode, setEditMode] = useState(isEditing);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [formData, setFormData] = useState({
     name: department?.name || '',
     description: department?.description || '',
@@ -57,6 +60,15 @@ export default function DepartmentDetailModal({
       setEditMode(false);
     } catch {
       // Keep edit mode open when save fails.
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    try {
+      await onDelete?.();
+      setShowDeleteConfirm(false);
+    } catch {
+      setShowDeleteConfirm(false);
     }
   };
 
@@ -93,7 +105,7 @@ export default function DepartmentDetailModal({
               <Eraser className="w-4 h-4 mr-1" />
               Clear details
             </Button>
-            <Button variant="destructive" size="sm" onClick={onDelete}>
+            <Button variant="destructive" size="sm" onClick={() => setShowDeleteConfirm(true)}>
               <Trash2 className="w-4 h-4 mr-1" />
               Delete
             </Button>
@@ -189,6 +201,16 @@ export default function DepartmentDetailModal({
           </TabsContent>
         </Tabs>
       </DialogContent>
+
+      <ConfirmDeleteDialog
+        open={showDeleteConfirm}
+        onOpenChange={setShowDeleteConfirm}
+        title="Delete department?"
+        description={`This will permanently delete "${department?.name}". ${departmentMembers.length} member${departmentMembers.length !== 1 ? "s" : ""} will be unassigned. This cannot be undone.`}
+        confirmLabel="Delete department"
+        onConfirm={handleConfirmDelete}
+        isPending={isDeleting}
+      />
     </Dialog>
   );
 }

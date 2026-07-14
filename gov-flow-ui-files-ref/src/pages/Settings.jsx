@@ -23,6 +23,7 @@ import { getOutlookStatus, startOutlookConnect } from "@/api/outlookApi";
 import { getGmailStatus, startGmailConnect } from "@/api/googleApi";
 import { useNodeBackend } from "@/api/nodeBackendClient";
 import AddMailboxDialog from "@/components/email/AddMailboxDialog";
+import ConfirmDeleteDialog from "@/components/shared/ConfirmDeleteDialog";
 import { syncMailboxInbox } from "@/api/emailApi";
 import { Badge } from "@/components/ui/badge";
 import { Trash2, Plus } from "lucide-react";
@@ -32,6 +33,7 @@ export default function Settings() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [addMailboxOpen, setAddMailboxOpen] = useState(false);
+  const [mailboxToDelete, setMailboxToDelete] = useState(null);
 
   const { data: user, isLoading } = useQuery({
     queryKey: ['currentUser'],
@@ -424,7 +426,7 @@ export default function Settings() {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => deleteMailboxMutation.mutate(mailbox.id)}
+                              onClick={() => setMailboxToDelete(mailbox)}
                               disabled={deleteMailboxMutation.isPending}
                               className="gap-2"
                               title="Remove mailbox"
@@ -563,6 +565,21 @@ export default function Settings() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <ConfirmDeleteDialog
+        open={Boolean(mailboxToDelete)}
+        onOpenChange={(open) => !open && setMailboxToDelete(null)}
+        title="Remove mailbox?"
+        description={`Remove ${mailboxToDelete?.email}? The connection will be disconnected. Previously synced emails may remain in the inbox.`}
+        confirmLabel="Remove mailbox"
+        onConfirm={() => {
+          if (mailboxToDelete?.id) {
+            deleteMailboxMutation.mutate(mailboxToDelete.id);
+          }
+          setMailboxToDelete(null);
+        }}
+        isPending={deleteMailboxMutation.isPending}
+      />
     </div>);
 
 }

@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
+import ConfirmDeleteDialog from "@/components/shared/ConfirmDeleteDialog";
 
 const STATUS_ICONS = {
   not_started: Circle,
@@ -41,6 +42,7 @@ const STATUS_COLORS = {
 export default function SubtaskList({ taskId, subtasks = [], users = [] }) {
   const [newSubtask, setNewSubtask] = useState('');
   const [expandedSubtasks, setExpandedSubtasks] = useState([]);
+  const [subtaskToDelete, setSubtaskToDelete] = useState(null);
   const queryClient = useQueryClient();
 
   const createSubtaskMutation = useMutation({
@@ -207,7 +209,7 @@ export default function SubtaskList({ taskId, subtasks = [], users = [] }) {
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8 text-slate-400 hover:text-red-600"
-                  onClick={() => deleteSubtaskMutation.mutate(subtask.id)}
+                  onClick={() => setSubtaskToDelete(subtask)}
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>
@@ -241,6 +243,20 @@ export default function SubtaskList({ taskId, subtasks = [], users = [] }) {
           </p>
         )}
       </div>
+
+      <ConfirmDeleteDialog
+        open={Boolean(subtaskToDelete)}
+        onOpenChange={(open) => !open && setSubtaskToDelete(null)}
+        title="Delete subtask?"
+        description={`Are you sure you want to delete "${subtaskToDelete?.title}"? This cannot be undone.`}
+        onConfirm={() => {
+          if (subtaskToDelete?.id) {
+            deleteSubtaskMutation.mutate(subtaskToDelete.id);
+          }
+          setSubtaskToDelete(null);
+        }}
+        isPending={deleteSubtaskMutation.isPending}
+      />
     </div>
   );
 }

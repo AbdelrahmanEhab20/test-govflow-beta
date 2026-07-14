@@ -4,14 +4,16 @@ import { listTasks, listTaskDependenciesByDependent, createTaskDependency, delet
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { Link2, Trash2, Plus } from 'lucide-react';
+import ConfirmDeleteDialog from '@/components/shared/ConfirmDeleteDialog';
 
 export default function TaskDependencyManager({ taskId, dependencies = [] }) {
   const queryClient = useQueryClient();
   const [showAddDependency, setShowAddDependency] = useState(false);
   const [selectedDepId, setSelectedDepId] = useState('');
   const [depType, setDepType] = useState('finish_to_start');
+  const [dependencyToDelete, setDependencyToDelete] = useState(null);
+  const [isRemoving, setIsRemoving] = useState(false);
 
   const { data: allTasks = [] } = useQuery({
     queryKey: ['tasks'],
@@ -39,8 +41,13 @@ export default function TaskDependencyManager({ taskId, dependencies = [] }) {
   };
 
   const handleRemoveDependency = async (depId) => {
-    await deleteTaskDependency(depId);
-    queryClient.invalidateQueries({ queryKey: ['taskDependencies', taskId] });
+    setIsRemoving(true);
+    try {
+      await deleteTaskDependency(depId);
+      queryClient.invalidateQueries({ queryKey: ['taskDependencies', taskId] });
+    } finally {
+      setIsRemoving(false);
+    }
   };
 
   const getDependencyLabel = (type) => {
@@ -83,7 +90,7 @@ export default function TaskDependencyManager({ taskId, dependencies = [] }) {
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => handleRemoveDependency(dep.id)}
+                  onClick={() => setDependencyToDelete(dep)}
                   className="text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -144,6 +151,21 @@ export default function TaskDependencyManager({ taskId, dependencies = [] }) {
           </Button>
         )}
       </CardContent>
+
+      <ConfirmDeleteDialog
+        open={Boolean(dependencyToDelete)}
+        onOpenChange={(open) => !open && setDependencyToDelete(null)}
+        title="Remove dependency?"
+        description={`Remove the dependency on "${getPrerequisiteTitle(dependencyToDelete?.prerequisite_task_id)}"? This cannot be undone.`}
+        confirmLabel="Remove"
+        onConfirm={async () => {
+          if (dependencyToDelete?.id) {
+            await handleRemoveDependency(dependencyToDelete.id);
+          }
+          setDependencyToDelete(null);
+        }}
+        isPending={isRemoving}
+      />
     </Card>
   );
 }

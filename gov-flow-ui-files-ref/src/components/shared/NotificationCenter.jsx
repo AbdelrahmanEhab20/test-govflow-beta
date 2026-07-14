@@ -6,9 +6,11 @@ import { Bell, Check, Trash2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { formatDistanceToNow } from 'date-fns';
+import ConfirmDeleteDialog from '@/components/shared/ConfirmDeleteDialog';
 
 export default function NotificationCenter({ isOpen, onClose }) {
   const queryClient = useQueryClient();
+  const [notificationToDelete, setNotificationToDelete] = useState(null);
 
   const { data: user } = useQuery({
     queryKey: ['currentUser'],
@@ -152,7 +154,7 @@ export default function NotificationCenter({ isOpen, onClose }) {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => deleteNotificationMutation.mutate(notif.id)}
+                        onClick={() => setNotificationToDelete(notif)}
                         className="h-6 w-6 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -165,6 +167,20 @@ export default function NotificationCenter({ isOpen, onClose }) {
           )}
         </ScrollArea>
       </div>
+
+      <ConfirmDeleteDialog
+        open={Boolean(notificationToDelete)}
+        onOpenChange={(open) => !open && setNotificationToDelete(null)}
+        title="Delete notification?"
+        description="Are you sure you want to delete this notification? This cannot be undone."
+        onConfirm={() => {
+          if (notificationToDelete?.id) {
+            deleteNotificationMutation.mutate(notificationToDelete.id);
+          }
+          setNotificationToDelete(null);
+        }}
+        isPending={deleteNotificationMutation.isPending}
+      />
     </>
   );
 }

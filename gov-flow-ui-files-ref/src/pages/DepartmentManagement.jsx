@@ -295,8 +295,9 @@ export default function DepartmentManagement() {
                 setEditingDept(dept);
                 setShowForm(true);
               }}
-              onDeleteDepartment={(id) => deleteDepartmentMutation.mutate(id)}
+              onDeleteDepartment={(id) => deleteDepartmentMutation.mutateAsync(id)}
               onClearDepartment={(id) => clearDepartmentMutation.mutate(id)}
+              isDeletingDepartment={deleteDepartmentMutation.isPending}
             />
           )}
           {activeView === 'hierarchy' && (

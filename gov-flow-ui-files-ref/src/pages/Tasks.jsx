@@ -47,6 +47,7 @@ export default function Tasks() {
   const [selectedTasks, setSelectedTasks] = useState([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState(null);
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
 
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -189,10 +190,15 @@ export default function Tasks() {
   };
 
   const handleBulkDelete = () => {
-    selectedTasks.forEach(id => {
+    setBulkDeleteDialogOpen(true);
+  };
+
+  const confirmBulkDelete = () => {
+    selectedTasks.forEach((id) => {
       deleteTaskMutation.mutate(id);
     });
     setSelectedTasks([]);
+    setBulkDeleteDialogOpen(false);
   };
 
   const toggleTaskSelection = (taskId) => {
@@ -344,6 +350,30 @@ export default function Tasks() {
             <AlertDialogAction 
               onClick={confirmDelete}
               className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={bulkDeleteDialogOpen} onOpenChange={setBulkDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {selectedTasks.length} task{selectedTasks.length !== 1 ? "s" : ""}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {selectedTasks.length} selected task{selectedTasks.length !== 1 ? "s" : ""}? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                confirmBulkDelete();
+              }}
+              className="bg-red-600 hover:bg-red-700 text-white"
+              disabled={deleteTaskMutation.isPending}
             >
               Delete
             </AlertDialogAction>

@@ -15,6 +15,7 @@ export default function DepartmentsView({
   onEditDepartment,
   onDeleteDepartment,
   onClearDepartment,
+  isDeletingDepartment = false,
 }) {
   const [viewMode, setViewMode] = useState('grid');
   const [selectedDepartment, setSelectedDepartment] = useState(null);
@@ -34,15 +35,16 @@ export default function DepartmentsView({
       onMembersUpdate={onMembersUpdate}
       isSaving={isSavingDepartment}
       isAdmin={isAdmin}
+      isDeleting={isDeletingDepartment}
       onEditFull={() => {
         if (selectedDepartment) {
           onEditDepartment?.(selectedDepartment);
           setSelectedDepartment(null);
         }
       }}
-      onDelete={() => {
+      onDelete={async () => {
         if (selectedDepartment) {
-          onDeleteDepartment?.(selectedDepartment.id);
+          await onDeleteDepartment?.(selectedDepartment.id);
           setSelectedDepartment(null);
         }
       }}

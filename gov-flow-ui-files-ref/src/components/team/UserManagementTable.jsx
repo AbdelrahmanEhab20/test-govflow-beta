@@ -189,22 +189,28 @@ export default function UserManagementTable({
             </AlertDialogTitle>
             <AlertDialogDescription>
               {confirmAction?.type === "hard"
-                ? `This will permanently remove ${confirmAction?.user?.full_name || confirmAction?.user?.email}. This cannot be undone.`
-                : `${confirmAction?.user?.full_name || confirmAction?.user?.email} will be set to inactive and unassigned from their department.`}
+                ? `This will permanently remove ${confirmAction?.user?.full_name || confirmAction?.user?.email} (${confirmAction?.user?.email}). This cannot be undone.`
+                : `${confirmAction?.user?.full_name || confirmAction?.user?.email} (${confirmAction?.user?.email}) will be set to inactive and unassigned from their department.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() =>
+              disabled={deleteMutation.isPending}
+              onClick={(e) => {
+                e.preventDefault();
                 deleteMutation.mutate({
                   userId: confirmAction.user.id,
                   mode: confirmAction.type,
-                })
-              }
+                });
+              }}
               className={confirmAction?.type === "hard" ? "bg-red-600 hover:bg-red-700" : ""}
             >
-              {confirmAction?.type === "hard" ? "Delete permanently" : "Deactivate"}
+              {deleteMutation.isPending
+                ? "Processing..."
+                : confirmAction?.type === "hard"
+                  ? "Delete permanently"
+                  : "Deactivate"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
