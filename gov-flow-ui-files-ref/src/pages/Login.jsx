@@ -1,30 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import govflowLoginLogo from '../assets/new-govflow-logo.png';
-
-function GoogleIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="w-5 h-5" aria-hidden="true">
-      <path fill="#EA4335" d="M12 10.2v3.9h5.5c-.2 1.3-1.5 3.9-5.5 3.9-3.3 0-6-2.7-6-6s2.7-6 6-6c1.9 0 3.2.8 4 1.5l2.7-2.6C17.1 3.4 14.8 2.5 12 2.5 6.9 2.5 2.8 6.6 2.8 11.7S6.9 20.9 12 20.9c6.2 0 9.1-4.3 9.1-6.6 0-.4 0-.7-.1-1H12z" />
-      <path fill="#34A853" d="M3.8 7.9l3.2 2.4c.9-2.6 2.9-4.3 5-4.3 1.9 0 3.2.8 4 1.5l2.7-2.6C17.1 3.4 14.8 2.5 12 2.5 8.4 2.5 5.3 4.6 3.8 7.9z" opacity=".001" />
-      <path fill="#4285F4" d="M21.1 13.3c0-.4 0-.7-.1-1H12v3.9h5.5c-.4 1.1-1.3 1.9-2.4 2.5l3.7 2.9c2.2-2.1 3.4-5.1 3.4-8.3z" opacity=".001" />
-      <path fill="#FBBC05" d="M3.8 15.5c1.5 3.3 4.6 5.4 8.2 5.4 2.8 0 5.1-.9 6.8-2.5l-3.7-2.9c-1 .7-2.1 1.1-3.1 1.1-2.1 0-4.1-1.7-5-4.3l-3.2 2.5z" opacity=".001" />
-    </svg>
-  );
-}
-
-function MicrosoftIcon() {
-  return (
-    <div className="w-5 h-5 grid grid-cols-2 gap-0.5" aria-hidden="true">
-      <span className="bg-[#F25022] rounded-sm" />
-      <span className="bg-[#7FBA00] rounded-sm" />
-      <span className="bg-[#00A4EF] rounded-sm" />
-      <span className="bg-[#FFB900] rounded-sm" />
-    </div>
-  );
-}
 
 export default function Login() {
   const navigate = useNavigate();
@@ -50,95 +28,127 @@ export default function Login() {
   const showGovflowCredit = appPublicSettings?.public_settings?.showGovflowCredit !== false;
   const govflowCreditText = appPublicSettings?.public_settings?.govflowCreditText || 'Powered by GovFlow';
 
+  const inputWrapperClass =
+    'h-12 rounded-xl bg-white/80 border border-slate-200/80 flex items-center px-3 gap-2 transition-all focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20 shadow-sm';
+
   return (
-    <div className="min-h-screen bg-slate-100 flex items-center justify-center px-4">
-      <div className="w-full max-w-md bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8">
-        {/* Replace your current logo div with this */}
-        <div className="flex justify-center mb-6">
-          <div className="w-14 h-14 flex items-center justify-center rounded-2xl bg-white shadow-md ring-1 ring-gray-200">
-            <img
-              src={govflowLoginLogo}
-              alt="GovFlow logo"
-              className="w-9 h-9 object-cover rounded-md"
-              draggable={false}
-            />
-          </div>
-        </div>
+    <div className="relative min-h-screen overflow-hidden bg-slate-950 flex items-center justify-center px-4 py-10">
+      <div
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-900/40 via-slate-950 to-slate-950"
+        aria-hidden="true"
+      />
+      <div
+        className="pointer-events-none absolute -top-24 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-blue-500/20 blur-3xl"
+        aria-hidden="true"
+      />
+      <div
+        className="pointer-events-none absolute bottom-0 right-0 h-64 w-64 rounded-full bg-indigo-500/10 blur-3xl"
+        aria-hidden="true"
+      />
 
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 text-center">Welcome to {appName}</h1>
-        <p className="text-slate-500 dark:text-slate-300 text-center mt-2 mb-6">Sign in to continue</p>
-
-        <div className="space-y-3 mb-5">
-          <button type="button" disabled className="w-full h-12 rounded-xl border border-slate-200 flex items-center justify-center gap-2 text-slate-500 bg-slate-50 cursor-not-allowed">
-            <GoogleIcon />
-            Google sign-in (coming soon)
-          </button>
-          <button type="button" disabled className="w-full h-12 rounded-xl border border-slate-200 flex items-center justify-center gap-2 text-slate-500 bg-slate-50 cursor-not-allowed">
-            <MicrosoftIcon />
-            Microsoft sign-in (coming soon)
-          </button>
-        </div>
-
-        <div className="flex items-center gap-3 mb-5">
-          <div className="flex-1 h-px bg-slate-200" />
-          <span className="text-xs text-slate-400">OR</span>
-          <div className="flex-1 h-px bg-slate-200" />
-        </div>
-
-        <form className="space-y-3" onSubmit={handleSubmit}>
-          <label className="block text-sm text-slate-600 mb-1">Email</label>
-          <div className="h-12 rounded-xl bg-slate-100 border border-slate-200 flex items-center px-3 gap-2">
-            <Mail className="w-4 h-4 text-slate-400" />
-            <input
-              className="w-full bg-transparent outline-none text-slate-900"
-              placeholder="name@company.com"
-              value={identifier}
-              onChange={(e) => setIdentifier(e.target.value)}
-              autoComplete="username"
-            />
+      <div className="relative w-full max-w-md">
+        <div className="rounded-3xl border border-white/10 bg-white/95 p-6 shadow-2xl shadow-slate-900/20 backdrop-blur-xl sm:p-8 dark:bg-slate-900/90 dark:border-slate-700/60">
+          <div className="flex justify-center mb-6">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-50 to-white shadow-lg ring-1 ring-slate-200/80 dark:from-slate-800 dark:to-slate-900 dark:ring-slate-700">
+              <img
+                src={govflowLoginLogo}
+                alt="GovFlow logo"
+                className="h-10 w-10 rounded-lg object-cover"
+                draggable={false}
+              />
+            </div>
           </div>
 
-          <label className="block text-sm text-slate-600 mb-1 mt-1">Password</label>
-          <div className="h-12 rounded-xl bg-slate-100 border border-slate-200 flex items-center px-3 gap-2">
-            <Lock className="w-4 h-4 text-slate-400" />
-            <input
-              className="w-full bg-transparent outline-none text-slate-900"
-              type={showPassword ? 'text' : 'password'}
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-            />
+          <div className="text-center mb-8">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+              Welcome to {appName}
+            </h1>
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+              Sign in with your email and password to continue
+            </p>
+          </div>
+
+          <form className="space-y-5" onSubmit={handleSubmit}>
+            <div>
+              <label htmlFor="login-email" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                Email
+              </label>
+              <div className={inputWrapperClass}>
+                <Mail className="h-4 w-4 shrink-0 text-slate-400" />
+                <input
+                  id="login-email"
+                  className="w-full bg-transparent text-slate-900 outline-none placeholder:text-slate-400 dark:text-slate-100"
+                  placeholder="name@company.com"
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  autoComplete="username"
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="login-password" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                Password
+              </label>
+              <div className={inputWrapperClass}>
+                <Lock className="h-4 w-4 shrink-0 text-slate-400" />
+                <input
+                  id="login-password"
+                  className="w-full bg-transparent text-slate-900 outline-none placeholder:text-slate-400 dark:text-slate-100"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="shrink-0 text-slate-400 transition-colors hover:text-slate-600 dark:hover:text-slate-300"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+
+            {error ? (
+              <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
+                {error}
+              </p>
+            ) : null}
+
+            <div className="flex justify-end">
+              <Link
+                to="/forgot-password"
+                className="text-sm font-medium text-blue-600 transition-colors hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+              >
+                Forgot password?
+              </Link>
+            </div>
+
             <button
-              type="button"
-              onClick={() => setShowPassword((v) => !v)}
-              className="text-slate-500 hover:text-slate-700"
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              type="submit"
+              disabled={isLoadingAuth}
+              className="group flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-slate-900 text-sm font-semibold text-white shadow-lg shadow-slate-900/25 transition-all hover:bg-slate-800 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60 dark:bg-blue-600 dark:hover:bg-blue-500"
             >
-              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              {isLoadingAuth ? 'Signing in...' : 'Sign in'}
+              {!isLoadingAuth && (
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              )}
             </button>
-          </div>
 
-          {error ? <p className="text-sm text-red-600">{error}</p> : null}
-
-          <div className="text-right">
-            <Link to="/forgot-password" className="text-sm text-blue-600 hover:text-blue-700">
-              Forgot password?
-            </Link>
-          </div>
-
-          <button
-            type="submit"
-            disabled={isLoadingAuth}
-            className="w-full h-12 mt-2 rounded-xl bg-slate-900 text-white font-medium hover:bg-slate-800 disabled:opacity-60"
-          >
-            {isLoadingAuth ? 'Signing in...' : 'Sign in'}
-          </button>
-          <p className="text-xs text-slate-500 text-center">{companyName} beta</p>
-          {showGovflowCredit ? <p className="text-[11px] text-slate-400 text-center">{govflowCreditText}</p> : null}
-        </form>
+            <div className="space-y-1 pt-2 text-center">
+              <p className="text-xs text-slate-500 dark:text-slate-400">{companyName} beta</p>
+              {showGovflowCredit ? (
+                <p className="text-[11px] text-slate-400 dark:text-slate-500">{govflowCreditText}</p>
+              ) : null}
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );
 }
-
