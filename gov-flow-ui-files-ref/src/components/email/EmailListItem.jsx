@@ -1,6 +1,6 @@
 import React from "react";
-import { format, formatDistanceToNow } from "date-fns";
-import { Paperclip, Star, StarOff, CheckCircle2 } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { Paperclip, Star, StarOff, User as UserIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -29,14 +29,33 @@ const STATUS_INDICATORS = {
   archived: "bg-slate-400"
 };
 
+function resolveAssigneeName(email, users = [], tasks = []) {
+  if (email.assigned_to_user_id) {
+    const user = users.find((u) => u.id === email.assigned_to_user_id);
+    return user?.full_name || user?.email || null;
+  }
+  if (email.linked_task_id) {
+    const task = tasks.find((t) => t.id === email.linked_task_id);
+    if (task?.lead_user_name) return task.lead_user_name;
+    if (task?.lead_user_id) {
+      const user = users.find((u) => u.id === task.lead_user_id);
+      return user?.full_name || user?.email || null;
+    }
+  }
+  return null;
+}
+
 export default function EmailListItem({ 
   email, 
+  users = [],
+  tasks = [],
   isSelected, 
   isActive,
   onSelect, 
   onClick,
   onStar 
 }) {
+  const assigneeName = resolveAssigneeName(email, users, tasks);
   return (
     <div 
       onClick={onClick}
@@ -107,9 +126,15 @@ export default function EmailListItem({
             </Badge>
           ))}
           {email.linked_task_id && (
-            <Badge variant="secondary" className="text-xs px-1.5 py-0 bg-emerald-100 text-emerald-700">
-              <CheckCircle2 className="w-3 h-3 mr-0.5" />
-              Linked
+            <Badge variant="secondary" className="text-xs px-1.5 py-0 bg-emerald-100 text-emerald-700 max-w-full truncate">
+              <UserIcon className="w-3 h-3 mr-0.5 shrink-0" />
+              {assigneeName ? `Assigned to ${assigneeName}` : 'Linked to task'}
+            </Badge>
+          )}
+          {!email.linked_task_id && email.assigned_to_user_id && assigneeName && (
+            <Badge variant="secondary" className="text-xs px-1.5 py-0 bg-amber-100 text-amber-800 max-w-full truncate">
+              <UserIcon className="w-3 h-3 mr-0.5 shrink-0" />
+              Assigned to {assigneeName}
             </Badge>
           )}
         </div>

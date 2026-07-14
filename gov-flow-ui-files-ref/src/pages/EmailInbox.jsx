@@ -152,12 +152,16 @@ export default function EmailInbox() {
     return result;
   }, [emails, activeView, categoryFilter, searchQuery]);
 
-  const selectedEmail = emails.find(e => e.id === selectedEmailId);
+  // Stats for tab counts (full mailbox, before search/category filters)
+  const viewCounts = useMemo(() => ({
+    all: emails.length,
+    new: emails.filter(e => e.status_in_system === 'new').length,
+    starred: emails.filter(e => e.is_starred).length,
+    converted: emails.filter(e => e.linked_task_id).length,
+    archived: emails.filter(e => e.status_in_system === 'archived').length,
+  }), [emails]);
 
-  // Stats
-  const newCount = emails.filter(e => e.status_in_system === 'new').length;
-  const starredCount = emails.filter(e => e.is_starred).length;
-  const convertedCount = emails.filter(e => e.linked_task_id).length;
+  const selectedEmail = emails.find(e => e.id === selectedEmailId);
 
   const handleSelectEmail = (email) => {
     setSelectedEmailId(email.id);
@@ -275,28 +279,37 @@ export default function EmailInbox() {
               <TabsTrigger value="all" className="gap-1.5">
                 <Inbox className="w-4 h-4" />
                 All
+                <Badge variant="secondary" className="ml-1 min-w-[1.25rem] justify-center px-1.5">
+                  {viewCounts.all}
+                </Badge>
               </TabsTrigger>
               <TabsTrigger value="new" className="gap-1.5">
                 <AlertCircle className="w-4 h-4" />
                 New
-                {newCount > 0 && (
-                  <Badge className="ml-1 bg-red-500">{newCount}</Badge>
-                )}
+                <Badge className={`ml-1 min-w-[1.25rem] justify-center px-1.5 ${viewCounts.new > 0 ? 'bg-red-500' : 'bg-slate-400'}`}>
+                  {viewCounts.new}
+                </Badge>
               </TabsTrigger>
               <TabsTrigger value="starred" className="gap-1.5">
                 <Star className="w-4 h-4" />
                 Starred
-                {starredCount > 0 && (
-                  <Badge variant="secondary" className="ml-1">{starredCount}</Badge>
-                )}
+                <Badge variant="secondary" className="ml-1 min-w-[1.25rem] justify-center px-1.5">
+                  {viewCounts.starred}
+                </Badge>
               </TabsTrigger>
               <TabsTrigger value="converted" className="gap-1.5">
                 <CheckCircle2 className="w-4 h-4" />
                 Converted
+                <Badge variant="secondary" className="ml-1 min-w-[1.25rem] justify-center px-1.5">
+                  {viewCounts.converted}
+                </Badge>
               </TabsTrigger>
               <TabsTrigger value="archived" className="gap-1.5">
                 <Archive className="w-4 h-4" />
                 Archived
+                <Badge variant="secondary" className="ml-1 min-w-[1.25rem] justify-center px-1.5">
+                  {viewCounts.archived}
+                </Badge>
               </TabsTrigger>
               </TabsList>
             </Tabs>
@@ -357,6 +370,8 @@ export default function EmailInbox() {
                 <EmailListItem
                   key={email.id}
                   email={email}
+                  users={users}
+                  tasks={tasks}
                   isSelected={selectedEmails.includes(email.id)}
                   isActive={email.id === selectedEmailId}
                   onSelect={() => {
