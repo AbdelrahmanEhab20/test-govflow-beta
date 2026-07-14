@@ -321,10 +321,15 @@ router.post(
       throw createHttpError(404, 'No Gmail mailbox connected', 'GMAIL_NOT_CONNECTED');
     }
 
-    const messageList = await callGoogleApi(
-      mailbox.accessToken,
-      'https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=50&q=in:inbox'
-    );
+    const { pageToken } = req.body || {};
+
+    let listUrl =
+      'https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=50&q=in:inbox';
+    if (pageToken) {
+      listUrl += `&pageToken=${encodeURIComponent(pageToken)}`;
+    }
+
+    const messageList = await callGoogleApi(mailbox.accessToken, listUrl);
     const messageIds = Array.isArray(messageList?.messages) ? messageList.messages : [];
 
     let inserted = 0;
@@ -389,6 +394,8 @@ router.post(
       fetched: messageIds.length,
       inserted,
       updated,
+      nextPageToken: messageList?.nextPageToken || null,
+      hasMore: Boolean(messageList?.nextPageToken),
     });
   })
 );

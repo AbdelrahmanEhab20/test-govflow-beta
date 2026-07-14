@@ -21,10 +21,10 @@ function getAllowedMailboxes(actor) {
     .filter(Boolean);
 }
 
-export async function listEmails(actor, query = {}, orderBy = '-received_at', limit = 100) {
+function buildMailboxQuery(actor, query = {}) {
   const allowedMailboxes = getAllowedMailboxes(actor);
   if (allowedMailboxes.length === 0) {
-    return [];
+    return { allowedMailboxes, mongoQuery: null };
   }
 
   const mailboxQuery = String(query?.mailbox || '').trim().toLowerCase();
@@ -33,21 +33,105 @@ export async function listEmails(actor, query = {}, orderBy = '-received_at', li
   }
 
   const finalMailboxFilter = mailboxQuery ? [mailboxQuery] : allowedMailboxes;
-  const { mailbox: _mailbox, ...restQuery } = query || {};
+  const {
+    mailbox: _mailbox,
+    paginated: _paginated,
+    skip: _skip,
+    is_starred: isStarredFilter,
+    has_linked_task: hasLinkedTaskFilter,
+    ...restQuery
+  } = query || {};
   const mongoQuery = {
     ...restQuery,
     mailbox: { $in: finalMailboxFilter },
   };
 
+  if (isStarredFilter === 'true' || isStarredFilter === true) {
+    mongoQuery.is_starred = true;
+  }
+  if (hasLinkedTaskFilter === 'true' || hasLinkedTaskFilter === true) {
+    mongoQuery.linked_task_id = { $exists: true, $nin: [null, ''] };
+  }
+
+  return { allowedMailboxes, mongoQuery };
+}
+
+export async function listEmails(
+  actor,
+  query = {},
+  orderBy = '-received_at',
+  limit = 100,
+  skip = 0,
+) {
+  const { mongoQuery } = buildMailboxQuery(actor, query);
+  if (!mongoQuery) {
+    return [];
+  }
+
+  const limitNum = Number(limit);
+  const skipNum = Number(skip) || 0;
+  const effectiveLimit = !Number.isNaN(limitNum) && limitNum > 0 ? limitNum : 100;
+
   let q = EmailMessage.find(withTenant(mongoQuery)).lean();
   q = applySort(q, orderBy);
-  if (limit) {
-    const n = Number(limit);
-    if (!Number.isNaN(n) && n > 0) {
-      q = q.limit(n);
-    }
-  }
+  q = q.skip(skipNum).limit(effectiveLimit);
   return q.exec();
+}
+
+export async function listEmailsPaginated(
+  actor,
+  query = {},
+  orderBy = '-received_at',
+  limit = 100,
+  skip = 0,
+) {
+  const { mongoQuery } = buildMailboxQuery(actor, query);
+  if (!mongoQuery) {
+    return { items: [], total: 0, hasMore: false, skip: 0, limit: Number(limit) || 100 };
+  }
+
+  const limitNum = Number(limit);
+  const skipNum = Number(skip) || 0;
+  const effectiveLimit = !Number.isNaN(limitNum) && limitNum > 0 ? limitNum : 100;
+
+  const filter = withTenant(mongoQuery);
+  const total = await EmailMessage.countDocuments(filter);
+  let q = EmailMessage.find(filter).lean();
+  q = applySort(q, orderBy);
+  q = q.skip(skipNum).limit(effectiveLimit);
+  const items = await q.exec();
+
+  return {
+    items,
+    total,
+    hasMore: skipNum + items.length < total,
+    skip: skipNum,
+    limit: effectiveLimit,
+  };
+}
+
+export async function getEmailCounts(actor, query = {}) {
+  const { mongoQuery } = buildMailboxQuery(actor, query);
+  if (!mongoQuery) {
+    return { all: 0, new: 0, starred: 0, converted: 0, archived: 0 };
+  }
+
+  const filter = withTenant(mongoQuery);
+  const [all, newCount, starred, converted, archived] = await Promise.all([
+    EmailMessage.countDocuments(filter),
+    EmailMessage.countDocuments({ ...filter, status_in_system: 'new' }),
+    EmailMessage.countDocuments({ ...filter, is_starred: true }),
+    EmailMessage.countDocuments({ ...filter, linked_task_id: { $exists: true, $nin: [null, ''] } }),
+    EmailMessage.countDocuments({ ...filter, status_in_system: 'archived' }),
+  ]);
+
+  return {
+    all,
+    new: newCount,
+    starred,
+    converted,
+    archived,
+  };
 }
 
 export async function getEmailById(actor, id) {
@@ -80,4 +164,3 @@ export async function updateEmail(actor, id, patch) {
   }
   return updated;
 }
-

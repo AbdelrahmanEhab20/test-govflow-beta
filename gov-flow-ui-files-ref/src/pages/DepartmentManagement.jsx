@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { getCurrentUser } from "@/api/authApi";
-import { listDepartments, updateDepartment } from "@/api/departmentsApi";
+import { listDepartments, updateDepartment, deleteDepartment, clearDepartmentDetails } from "@/api/departmentsApi";
 import { listUsers } from "@/api/usersApi";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -11,11 +11,12 @@ import { createPageUrl } from "../utils";
 import DepartmentForm from "../components/departments/DepartmentForm";
 import InviteTeamMemberDialog from "../components/team/InviteTeamMemberDialog";
 import ImportContactsDialog from "../components/team/ImportContactsDialog";
-import TeamMembersView from "../components/team/TeamMembersView";
+import UserManagementTable from "../components/team/UserManagementTable";
 import DepartmentsView from "../components/team/DepartmentsView";
 import DepartmentHierarchyView from "../components/team/DepartmentHierarchyView";
 import SectorsView from "../components/team/SectorsView";
 import { useToast } from "@/components/ui/use-toast";
+import { hasPermission, PERMISSIONS } from "@/components/shared/rbac";
 
 function memberBelongsToDepartment(member, department) {
   if (department.id && member.department_id === department.id) return true;
@@ -65,12 +66,45 @@ export default function DepartmentManagement() {
     },
   });
 
+  const deleteDepartmentMutation = useMutation({
+    mutationFn: (id) => deleteDepartment(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['departments'] });
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      toast({ title: 'Department deleted', description: 'Department was removed and members were unassigned.' });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Could not delete department',
+        description: error?.message || 'Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const clearDepartmentMutation = useMutation({
+    mutationFn: (id) => clearDepartmentDetails(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['departments'] });
+      toast({ title: 'Details cleared', description: 'Optional department fields were reset.' });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Could not clear details',
+        description: error?.message || 'Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const refreshMemberQueries = () => {
     queryClient.invalidateQueries({ queryKey: ['users'] });
     queryClient.invalidateQueries({ queryKey: ['departments'] });
   };
 
   const hasTeamManagementAccess = ['admin', 'department_admin'].includes(user?.role);
+  const isAdmin = hasPermission(user?.role, PERMISSIONS.DEPARTMENTS_DELETE);
+  const canInvite = hasPermission(user?.role, PERMISSIONS.USERS_INVITE);
 
   if (user && !hasTeamManagementAccess) {
     return (
@@ -101,13 +135,13 @@ export default function DepartmentManagement() {
     [users],
   );
 
-  const filteredTeamMembers = normalizedTeamMembers.filter((member) => {
+  const filteredUsers = users.filter((member) => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
-      member.name?.toLowerCase().includes(query) ||
-      member.job_title?.toLowerCase().includes(query) ||
-      member.department_name?.toLowerCase().includes(query) ||
+      member.full_name?.toLowerCase().includes(query) ||
+      member.position?.toLowerCase().includes(query) ||
+      member.department?.toLowerCase().includes(query) ||
       member.email?.toLowerCase().includes(query)
     );
   });
@@ -218,12 +252,15 @@ export default function DepartmentManagement() {
             {activeView === 'departments' && (
               <>
                 <ImportContactsDialog />
-                <InviteTeamMemberDialog departments={departments} />
+                {canInvite && <InviteTeamMemberDialog departments={departments} currentUser={user} />}
                 <Button onClick={() => setShowForm(true)} className="gap-2">
                   <Plus className="w-4 h-4" />
                   New Department
                 </Button>
               </>
+            )}
+            {activeView === 'members' && canInvite && (
+              <InviteTeamMemberDialog departments={departments} currentUser={user} />
             )}
           </div>
         </div>
@@ -239,7 +276,13 @@ export default function DepartmentManagement() {
         </div>
       ) : (
         <>
-          {activeView === 'members' && <TeamMembersView members={filteredTeamMembers} />}
+          {activeView === 'members' && (
+            <UserManagementTable
+              users={filteredUsers}
+              departments={departments}
+              currentUser={user}
+            />
+          )}
           {activeView === 'departments' && (
             <DepartmentsView
               departments={filteredDepartmentsView}
@@ -247,6 +290,13 @@ export default function DepartmentManagement() {
               onDepartmentUpdate={handleDepartmentUpdate}
               onMembersUpdate={refreshMemberQueries}
               isSavingDepartment={updateDepartmentMutation.isPending}
+              isAdmin={isAdmin}
+              onEditDepartment={(dept) => {
+                setEditingDept(dept);
+                setShowForm(true);
+              }}
+              onDeleteDepartment={(id) => deleteDepartmentMutation.mutate(id)}
+              onClearDepartment={(id) => clearDepartmentMutation.mutate(id)}
             />
           )}
           {activeView === 'hierarchy' && (

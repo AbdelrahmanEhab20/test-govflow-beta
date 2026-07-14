@@ -21,6 +21,8 @@ const PERMISSIONS = {
   TEAM_VIEW: 'team:view',
   TEAM_EDIT: 'team:edit',
   TEAM_MANAGE_ROLES: 'team:manage_roles',
+  USERS_DELETE: 'users:delete',
+  USERS_INVITE: 'users:invite',
 
   // Reports
   REPORTS_VIEW: 'reports:view',

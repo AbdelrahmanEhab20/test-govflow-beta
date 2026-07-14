@@ -20,8 +20,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Loader2, UserPlus } from "lucide-react";
+import { hasPermission, PERMISSIONS } from "@/components/shared/rbac";
 
-export default function InviteTeamMemberDialog({ departments }) {
+const BASE_ROLE_OPTIONS = [
+  { value: "user", label: "User" },
+  { value: "team_member", label: "Team Member" },
+  { value: "department_manager", label: "Department Manager" },
+  { value: "department_admin", label: "Department Admin" },
+  { value: "editor", label: "Editor" },
+  { value: "viewer", label: "Viewer" },
+];
+
+export default function InviteTeamMemberDialog({ departments, currentUser }) {
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
@@ -30,6 +40,15 @@ export default function InviteTeamMemberDialog({ departments }) {
     position: ''
   });
   const queryClient = useQueryClient();
+
+  const canInviteAdmin = currentUser?.role === 'admin';
+  const roleOptions = canInviteAdmin
+    ? [...BASE_ROLE_OPTIONS, { value: "admin", label: "Admin" }]
+    : BASE_ROLE_OPTIONS;
+
+  if (!hasPermission(currentUser?.role, PERMISSIONS.USERS_INVITE)) {
+    return null;
+  }
 
   const inviteMutation = useMutation({
     mutationFn: async (data) => {
@@ -110,8 +129,11 @@ export default function InviteTeamMemberDialog({ departments }) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="user">User</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
+                {roleOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

@@ -16,10 +16,10 @@ export function Toaster() {
       {toasts.map(function ({ id, title, description, action, ...props }) {
         return (
           <Toast key={id} {...props} className="pointer-events-auto">
-            <div className="grid gap-1 flex-1 min-w-0">
-              {title && <ToastTitle>{title}</ToastTitle>}
+            <div className="grid gap-1 flex-1 min-w-0 max-w-full break-words [overflow-wrap:anywhere]">
+              {title && <ToastTitle className="break-words">{title}</ToastTitle>}
               {description && (
-                <ToastDescription>{description}</ToastDescription>
+                <ToastDescription className="break-words">{description}</ToastDescription>
               )}
             </div>
             {action}

@@ -30,6 +30,20 @@ export async function updateUserRole(userId, newRole) {
   return response?.data ?? response;
 }
 
+export async function deleteUser(userId, mode = 'soft') {
+  if (useNodeBackend) {
+    return nodeRequest(`/users/${userId}`, { method: 'DELETE', body: { mode } });
+  }
+  throw new Error('User delete is only supported with the Node backend');
+}
+
+export async function getUserDeleteEligibility(userId) {
+  if (useNodeBackend) {
+    return nodeRequest(`/users/${userId}/delete-eligibility`);
+  }
+  return { canHardDelete: false, dependencies: {} };
+}
+
 export async function inviteUser(payloadOrEmail, maybeRole) {
   const payload = typeof payloadOrEmail === 'object' && payloadOrEmail !== null
     ? payloadOrEmail

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { asyncHandler } from '../middleware/errorHandler.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
-import { listUsers, updateUser, updateUserRole, inviteUser } from '../services/usersService.js';
+import { listUsers, updateUser, updateUserRole, inviteUser, deleteUser, getUserDeleteEligibility } from '../services/usersService.js';
 
 const router = Router();
 
@@ -41,10 +41,33 @@ router.post(
 router.post(
   '/users/invite',
   requireAuth,
-  requireRole('admin', 'department_admin'),
+  requireRole('admin'),
   asyncHandler(async (req, res) => {
     const invited = await inviteUser(req.body || {});
     res.status(201).json(invited);
+  }),
+);
+
+// GET /users/:id/delete-eligibility
+router.get(
+  '/users/:id/delete-eligibility',
+  requireAuth,
+  requireRole('admin'),
+  asyncHandler(async (req, res) => {
+    const result = await getUserDeleteEligibility(req.params.id, req.user);
+    res.json(result);
+  }),
+);
+
+// DELETE /users/:id
+router.delete(
+  '/users/:id',
+  requireAuth,
+  requireRole('admin'),
+  asyncHandler(async (req, res) => {
+    const { mode } = req.body || {};
+    const result = await deleteUser(req.params.id, { mode }, req.user);
+    res.json(result);
   }),
 );
 

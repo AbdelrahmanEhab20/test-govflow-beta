@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Edit2 } from "lucide-react";
+import { Edit2, Trash2, Eraser } from "lucide-react";
 import DepartmentMembersManager from "@/components/departments/DepartmentMembersManager";
 
 function memberBelongsToDepartment(member, department) {
@@ -24,6 +24,10 @@ export default function DepartmentDetailModal({
   onMembersUpdate,
   isEditing = false,
   isSaving = false,
+  isAdmin = false,
+  onEditFull,
+  onDelete,
+  onClearDetails,
 }) {
   const [editMode, setEditMode] = useState(isEditing);
   const [formData, setFormData] = useState({
@@ -79,6 +83,22 @@ export default function DepartmentDetailModal({
             </Button>
           </div>
         </DialogHeader>
+
+        {isAdmin && !editMode && (
+          <div className="flex flex-wrap gap-2 pb-2">
+            <Button variant="outline" size="sm" onClick={onEditFull}>
+              Full edit
+            </Button>
+            <Button variant="outline" size="sm" onClick={onClearDetails}>
+              <Eraser className="w-4 h-4 mr-1" />
+              Clear details
+            </Button>
+            <Button variant="destructive" size="sm" onClick={onDelete}>
+              <Trash2 className="w-4 h-4 mr-1" />
+              Delete
+            </Button>
+          </div>
+        )}
 
         <Tabs defaultValue="details" className="w-full">
           <TabsList className="grid w-full grid-cols-2">

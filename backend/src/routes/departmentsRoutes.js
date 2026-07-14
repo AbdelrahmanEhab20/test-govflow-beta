@@ -6,6 +6,7 @@ import {
   createDepartment,
   updateDepartment,
   deleteDepartment,
+  clearDepartmentDetails,
   moveDepartmentInHierarchy,
   listTeams,
   updateTeamMember,
@@ -72,13 +73,24 @@ router.patch(
   }),
 );
 
+// PATCH /departments/:id/clear
+router.patch(
+  '/departments/:id/clear',
+  requireAuth,
+  requireRole('admin'),
+  asyncHandler(async (req, res) => {
+    const updated = await clearDepartmentDetails(req.params.id);
+    res.json(updated);
+  }),
+);
+
 // DELETE /departments/:id
 router.delete(
   '/departments/:id',
   requireAuth,
-  requireRole('admin', 'department_admin'),
+  requireRole('admin'),
   asyncHandler(async (req, res) => {
-    const result = await deleteDepartment(req.params.id);
+    const result = await deleteDepartment(req.params.id, req.user);
     res.json(result);
   }),
 );

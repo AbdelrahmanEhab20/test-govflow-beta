@@ -50,5 +50,7 @@ const EmailMessageSchema = new mongoose.Schema(
   }
 );
 
+EmailMessageSchema.index({ tenantId: 1, mailbox: 1, received_at: -1 });
+
 export const EmailMessage = mongoose.model('EmailMessage', EmailMessageSchema);
 

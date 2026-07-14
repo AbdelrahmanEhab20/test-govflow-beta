@@ -295,9 +295,12 @@ router.post(
       throw createHttpError(404, 'No Outlook mailbox connected', 'OUTLOOK_NOT_CONNECTED');
     }
 
+    const skip = Math.max(0, Number(req.body?.skip) || 0);
+    const top = 50;
+
     const messages = await callGraph(
       mailbox.accessToken,
-      '/me/messages?$top=50&$select=id,subject,from,toRecipients,ccRecipients,body,bodyPreview,receivedDateTime,isRead,hasAttachments,categories'
+      `/me/messages?$top=${top}&$skip=${skip}&$select=id,subject,from,toRecipients,ccRecipients,body,bodyPreview,receivedDateTime,isRead,hasAttachments,categories`
     );
     const items = Array.isArray(messages?.value) ? messages.value : [];
 
@@ -381,6 +384,8 @@ router.post(
       fetched: items.length,
       inserted,
       updated,
+      nextSkip: skip + items.length,
+      hasMore: items.length === top,
     });
   })
 );

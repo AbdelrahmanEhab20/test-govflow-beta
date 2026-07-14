@@ -1,7 +1,8 @@
 import { v4 as uuidv4 } from 'uuid';
-import { Department, TeamMember } from '../models/index.js';
+import { Department, TeamMember, User } from '../models/index.js';
 import { config } from '../config/index.js';
 import { createHttpError } from '../middleware/errorHandler.js';
+import { notifyUserDepartmentChange } from './teamNotifications.js';
 
 function withTenant(filter = {}) {
   return { tenantId: config.defaultTenantId, ...filter };
@@ -168,9 +169,78 @@ export async function updateDepartment(id, patch) {
   return updated;
 }
 
-export async function deleteDepartment(id) {
+export async function deleteDepartment(id, actor = null) {
+  const allDepartments = await getAllDepartments();
+  const department = allDepartments.find((dept) => dept.id === id);
+  if (!department) {
+    throw createHttpError(404, 'Department not found', 'DEPARTMENT_NOT_FOUND');
+  }
+
+  const children = allDepartments.filter((dept) => dept.parent_department_id === id);
+  if (children.length > 0) {
+    throw createHttpError(
+      400,
+      'Cannot delete department with child departments. Reassign or delete children first.',
+      'DEPARTMENT_HAS_CHILDREN',
+    );
+  }
+
+  const affectedUsers = await User.find(
+    withTenant({
+      $or: [{ department_id: id }, { department: department.name }],
+    }),
+  )
+    .lean()
+    .exec();
+
+  const now = nowIso();
+  await Promise.all(
+    affectedUsers.map((user) =>
+      User.findOneAndUpdate(
+        withTenant({ id: user.id }),
+        { $set: { department_id: '', department: '', updated_date: now } },
+      ).exec(),
+    ),
+  );
+
+  for (const user of affectedUsers) {
+    if (user.department || user.department_id) {
+      await notifyUserDepartmentChange({
+        userId: user.id,
+        previousDepartmentName: department.name,
+        newDepartmentName: null,
+        actorUserId: actor?.id,
+      });
+    }
+  }
+
   await Department.findOneAndDelete(withTenant({ id }));
-  return { success: true };
+  return { success: true, unlinkedUsers: affectedUsers.length };
+}
+
+export async function clearDepartmentDetails(id) {
+  const now = nowIso();
+  const updated = await Department.findOneAndUpdate(
+    withTenant({ id }),
+    {
+      $set: {
+        description: '',
+        notes: '',
+        tags: [],
+        email: '',
+        phone: '',
+        manager_user_id: '',
+        manager_name: '',
+        updated_date: now,
+      },
+    },
+    { new: true },
+  ).lean();
+
+  if (!updated) {
+    throw createHttpError(404, 'Department not found', 'DEPARTMENT_NOT_FOUND');
+  }
+  return updated;
 }
 
 export async function listTeams() {

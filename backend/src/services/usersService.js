@@ -1,8 +1,9 @@
 import { v4 as uuidv4 } from 'uuid';
-import { Department, User } from '../models/index.js';
+import { Department, User, Task, EmailMessage, TaskApproval } from '../models/index.js';
 import { config } from '../config/index.js';
 import { createHttpError } from '../middleware/errorHandler.js';
 import { normalizeEmail, generateOpaqueToken, tokenExpiry, sendInviteEmail } from './authService.js';
+import { notifyUserDepartmentChange } from './teamNotifications.js';
 
 function withTenant(filter = {}) {
   return { tenantId: config.defaultTenantId, ...filter };
@@ -86,6 +87,7 @@ export async function listUsers(actor = null) {
     .exec();
   const visibleUsers = users.filter((user) => {
     if (!actor) return false;
+    if (!isAdmin(actor.role) && user.status === 'inactive') return false;
     if (isAdmin(actor.role)) return true;
     if (actor.id === user.id) return true;
     if (isDepartmentAdmin(actor.role) || isDepartmentManager(actor.role)) {
@@ -120,6 +122,9 @@ export async function updateUser(userId, data, actor = null) {
     'mailboxes',
     'onboarding_completed',
   ];
+  if (isAdmin(actor?.role)) {
+    allowedFields.push('role', 'status');
+  }
   const patch = {};
   for (const field of allowedFields) {
     if (Object.prototype.hasOwnProperty.call(data || {}, field)) {
@@ -155,6 +160,20 @@ export async function updateUser(userId, data, actor = null) {
     }
   }
 
+  const previousDepartmentName = String(target.department || '').trim();
+  let newDepartmentName = previousDepartmentName;
+  if (Object.prototype.hasOwnProperty.call(patch, 'department')) {
+    newDepartmentName = String(patch.department || '').trim();
+  } else if (Object.prototype.hasOwnProperty.call(patch, 'department_id')) {
+    const deptId = String(patch.department_id || '').trim();
+    if (!deptId) {
+      newDepartmentName = '';
+    } else {
+      const department = deptById.get(deptId);
+      newDepartmentName = department?.name || '';
+    }
+  }
+
   const now = nowIso();
   const updated = await User.findOneAndUpdate(
     withTenant({ id: userId }),
@@ -165,7 +184,117 @@ export async function updateUser(userId, data, actor = null) {
   if (!updated) {
     throw createHttpError(404, 'User not found', 'USER_NOT_FOUND');
   }
+
+  if (previousDepartmentName !== newDepartmentName) {
+    await notifyUserDepartmentChange({
+      userId: updated.id,
+      previousDepartmentName,
+      newDepartmentName,
+      actorUserId: actor?.id,
+    });
+  }
+
   return sanitizeUser(updated);
+}
+
+async function countActiveAdmins(excludeUserId = null) {
+  const filter = withTenant({ role: 'admin', status: { $ne: 'inactive' } });
+  if (excludeUserId) {
+    filter.id = { $ne: excludeUserId };
+  }
+  return User.countDocuments(filter);
+}
+
+async function getUserDependencyCounts(userId) {
+  const filter = withTenant({});
+  const [taskCount, emailCount, approvalCount] = await Promise.all([
+    Task.countDocuments({ ...filter, lead_user_id: userId }),
+    EmailMessage.countDocuments({ ...filter, assigned_to_user_id: userId }),
+    TaskApproval.countDocuments({ ...filter, approver_user_id: userId, status: 'pending' }),
+  ]);
+  return { taskCount, emailCount, approvalCount };
+}
+
+export async function deleteUser(userId, options = {}, actor = null) {
+  if (!isAdmin(actor?.role)) {
+    throw createHttpError(403, 'Forbidden', 'FORBIDDEN');
+  }
+
+  const target = await User.findOne(withTenant({ id: userId })).lean();
+  if (!target) {
+    throw createHttpError(404, 'User not found', 'USER_NOT_FOUND');
+  }
+  if (actor?.id === target.id) {
+    throw createHttpError(400, 'You cannot delete your own account', 'CANNOT_DELETE_SELF');
+  }
+
+  const mode = options.mode === 'hard' ? 'hard' : 'soft';
+
+  if (mode === 'hard') {
+    const deps = await getUserDependencyCounts(userId);
+    if (deps.taskCount > 0 || deps.emailCount > 0 || deps.approvalCount > 0) {
+      throw createHttpError(
+        409,
+        'User cannot be permanently deleted while linked tasks, assigned emails, or pending approvals exist',
+        'USER_HAS_DEPENDENCIES',
+      );
+    }
+    if (target.role === 'admin') {
+      const remainingAdmins = await countActiveAdmins(userId);
+      if (remainingAdmins === 0) {
+        throw createHttpError(409, 'Cannot delete the last admin user', 'LAST_ADMIN');
+      }
+    }
+    await User.findOneAndDelete(withTenant({ id: userId }));
+    return { success: true, mode: 'hard' };
+  }
+
+  const previousDepartmentName = String(target.department || '').trim();
+  const now = nowIso();
+  await User.findOneAndUpdate(
+    withTenant({ id: userId }),
+    {
+      $set: {
+        status: 'inactive',
+        department_id: '',
+        department: '',
+        updated_date: now,
+      },
+    },
+  );
+
+  if (previousDepartmentName) {
+    await notifyUserDepartmentChange({
+      userId: target.id,
+      previousDepartmentName,
+      newDepartmentName: null,
+      actorUserId: actor?.id,
+    });
+  }
+
+  return { success: true, mode: 'soft' };
+}
+
+export async function getUserDeleteEligibility(userId, actor = null) {
+  if (!isAdmin(actor?.role)) {
+    throw createHttpError(403, 'Forbidden', 'FORBIDDEN');
+  }
+  const target = await User.findOne(withTenant({ id: userId })).lean();
+  if (!target) {
+    throw createHttpError(404, 'User not found', 'USER_NOT_FOUND');
+  }
+  const deps = await getUserDependencyCounts(userId);
+  const canHardDelete =
+    deps.taskCount === 0 &&
+    deps.emailCount === 0 &&
+    deps.approvalCount === 0 &&
+    actor?.id !== target.id &&
+    !(target.role === 'admin' && (await countActiveAdmins(userId)) === 0);
+
+  return {
+    canHardDelete,
+    dependencies: deps,
+  };
 }
 
 export async function updateUserRole(userId, newRole, actor = null) {

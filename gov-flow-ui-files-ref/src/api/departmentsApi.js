@@ -47,6 +47,13 @@ export async function moveDepartmentInHierarchy(departmentId, parentDepartmentId
   throw new Error('Hierarchy move is only supported with the Node backend');
 }
 
+export async function clearDepartmentDetails(id) {
+  if (useNodeBackend) {
+    return nodeRequest(`/departments/${id}/clear`, { method: 'PATCH' });
+  }
+  throw new Error('Clear department is only supported with the Node backend');
+}
+
 export async function deleteDepartment(id) {
   if (useNodeBackend) {
     return nodeRequest(`/departments/${id}`, { method: 'DELETE' });

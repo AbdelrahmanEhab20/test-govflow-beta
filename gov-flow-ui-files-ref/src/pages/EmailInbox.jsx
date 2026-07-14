@@ -1,7 +1,14 @@
 import React, { useState, useMemo } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getCurrentUser } from "@/api/authApi";
-import { listEmails, syncMailboxInbox, updateEmail } from "@/api/emailApi";
+import {
+  listEmailsPaginated,
+  getEmailCounts,
+  syncMailboxInbox,
+  updateEmail,
+  EMAIL_LIST_INITIAL,
+  EMAIL_LIST_PAGE_SIZE,
+} from "@/api/emailApi";
 import { listUsers } from "@/api/usersApi";
 import { listTasks } from "@/api/tasksApi";
 import { useNodeBackend } from "@/api/nodeBackendClient";
@@ -14,7 +21,8 @@ import {
   Star, 
   Archive,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,6 +64,27 @@ const CATEGORY_OPTIONS = [
   { value: "other", label: "Other" }
 ];
 
+function buildEmailListQuery(activeView, activeMailbox) {
+  const query = activeMailbox ? { mailbox: activeMailbox } : {};
+  switch (activeView) {
+    case 'new':
+      query.status_in_system = 'new';
+      break;
+    case 'archived':
+      query.status_in_system = 'archived';
+      break;
+    case 'starred':
+      query.is_starred = 'true';
+      break;
+    case 'converted':
+      query.has_linked_task = 'true';
+      break;
+    default:
+      break;
+  }
+  return query;
+}
+
 export default function EmailInbox() {
   const urlParams = new URLSearchParams(window.location.search);
   const preSelectedId = urlParams.get('id');
@@ -68,6 +97,7 @@ export default function EmailInbox() {
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [selectedTaskToLink, setSelectedTaskToLink] = useState('');
   const [activeMailbox, setActiveMailbox] = useState(null);
+  const [providerCursor, setProviderCursor] = useState(null);
 
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -83,15 +113,42 @@ export default function EmailInbox() {
     const activeEmail = active?.email || null;
     if (activeEmail !== activeMailbox) {
       setActiveMailbox(activeEmail);
+      setProviderCursor(null);
     }
   }, [currentUser, activeMailbox]);
 
-  const { data: emails = [], isLoading, refetch } = useQuery({
-    queryKey: ['emails', activeMailbox],
-    queryFn: () => {
-      const query = activeMailbox ? { mailbox: activeMailbox } : {};
-      return listEmails(query, '-received_at', 50);
+  const listQuery = useMemo(
+    () => buildEmailListQuery(activeView, activeMailbox),
+    [activeView, activeMailbox],
+  );
+
+  const {
+    data: emailPages,
+    isLoading,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+    refetch,
+  } = useInfiniteQuery({
+    queryKey: ['emails', activeMailbox, activeView],
+    queryFn: ({ pageParam = 0 }) => {
+      const skip = pageParam;
+      const limit = skip === 0 ? EMAIL_LIST_INITIAL : EMAIL_LIST_PAGE_SIZE;
+      return listEmailsPaginated(listQuery, '-received_at', limit, skip);
     },
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) =>
+      lastPage.hasMore ? lastPage.skip + lastPage.items.length : undefined,
+  });
+
+  const emails = useMemo(
+    () => emailPages?.pages?.flatMap((page) => page.items) ?? [],
+    [emailPages],
+  );
+
+  const { data: viewCounts = {} } = useQuery({
+    queryKey: ['emailCounts', activeMailbox],
+    queryFn: () => getEmailCounts(activeMailbox ? { mailbox: activeMailbox } : {}),
   });
 
   const { data: users = [] } = useQuery({
@@ -106,11 +163,28 @@ export default function EmailInbox() {
 
   const updateEmailMutation = useMutation({
     mutationFn: ({ id, data }) => updateEmail(id, data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['emails'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['emails'] });
+      queryClient.invalidateQueries({ queryKey: ['emailCounts'] });
+    },
   });
   const syncInboxMutation = useMutation({
-    mutationFn: (provider) => syncMailboxInbox(provider),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['emails'] }),
+    mutationFn: ({ provider, options = {} }) => syncMailboxInbox(provider, options),
+    onSuccess: (result, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['emails'] });
+      queryClient.invalidateQueries({ queryKey: ['emailCounts'] });
+      if (variables.provider === 'gmail' && result?.nextPageToken) {
+        setProviderCursor({ provider: 'gmail', pageToken: result.nextPageToken, hasMore: result.hasMore });
+      } else if (variables.provider === 'outlook') {
+        setProviderCursor({
+          provider: 'outlook',
+          skip: result?.nextSkip ?? 0,
+          hasMore: Boolean(result?.hasMore),
+        });
+      } else {
+        setProviderCursor(null);
+      }
+    },
   });
 
   // Filter emails
@@ -152,14 +226,14 @@ export default function EmailInbox() {
     return result;
   }, [emails, activeView, categoryFilter, searchQuery]);
 
-  // Stats for tab counts (full mailbox, before search/category filters)
-  const viewCounts = useMemo(() => ({
-    all: emails.length,
-    new: emails.filter(e => e.status_in_system === 'new').length,
-    starred: emails.filter(e => e.is_starred).length,
-    converted: emails.filter(e => e.linked_task_id).length,
-    archived: emails.filter(e => e.status_in_system === 'archived').length,
-  }), [emails]);
+  // Stats for tab counts from API (full mailbox totals)
+  const tabCounts = {
+    all: viewCounts.all ?? 0,
+    new: viewCounts.new ?? 0,
+    starred: viewCounts.starred ?? 0,
+    converted: viewCounts.converted ?? 0,
+    archived: viewCounts.archived ?? 0,
+  };
 
   const selectedEmail = emails.find(e => e.id === selectedEmailId);
 
@@ -234,7 +308,16 @@ export default function EmailInbox() {
     if (useNodeBackend) {
       try {
         if (selectedProvider === 'gmail' || selectedProvider === 'outlook') {
-          await syncInboxMutation.mutateAsync(selectedProvider);
+          const result = await syncInboxMutation.mutateAsync({ provider: selectedProvider, options: {} });
+          if (selectedProvider === 'gmail' && result?.nextPageToken) {
+            setProviderCursor({ provider: 'gmail', pageToken: result.nextPageToken, hasMore: result.hasMore });
+          } else if (selectedProvider === 'outlook') {
+            setProviderCursor({
+              provider: 'outlook',
+              skip: result?.nextSkip ?? 0,
+              hasMore: Boolean(result?.hasMore),
+            });
+          }
         }
       } catch (error) {
         toast({
@@ -242,11 +325,34 @@ export default function EmailInbox() {
           title: 'Inbox sync failed',
           description: error?.message || 'Reconnect this mailbox and try again.',
         });
-        // Keep manual refresh available even when sync fails.
       }
     }
     refetch();
   };
+
+  const handleSyncOlder = async () => {
+    const selectedMailbox = currentUser?.mailboxes?.find((mailbox) => mailbox.email === activeMailbox && mailbox.isActive);
+    const selectedProvider = selectedMailbox?.provider;
+    if (!selectedProvider || !providerCursor?.hasMore) return;
+
+    const options =
+      selectedProvider === 'gmail'
+        ? { pageToken: providerCursor.pageToken }
+        : { skip: providerCursor.skip };
+
+    try {
+      await syncInboxMutation.mutateAsync({ provider: selectedProvider, options });
+      await refetch();
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Sync older emails failed',
+        description: error?.message || 'Please try again.',
+      });
+    }
+  };
+
+  const showSyncOlder = !hasNextPage && providerCursor?.hasMore && useNodeBackend;
 
   return (
     <div className="h-[calc(100vh-4rem)] flex flex-col min-w-0">
@@ -280,35 +386,35 @@ export default function EmailInbox() {
                 <Inbox className="w-4 h-4" />
                 All
                 <Badge variant="secondary" className="ml-1 min-w-[1.25rem] justify-center px-1.5">
-                  {viewCounts.all}
+                  {tabCounts.all}
                 </Badge>
               </TabsTrigger>
               <TabsTrigger value="new" className="gap-1.5">
                 <AlertCircle className="w-4 h-4" />
                 New
-                <Badge className={`ml-1 min-w-[1.25rem] justify-center px-1.5 ${viewCounts.new > 0 ? 'bg-red-500' : 'bg-slate-400'}`}>
-                  {viewCounts.new}
+                <Badge className={`ml-1 min-w-[1.25rem] justify-center px-1.5 ${tabCounts.new > 0 ? 'bg-red-500' : 'bg-slate-400'}`}>
+                  {tabCounts.new}
                 </Badge>
               </TabsTrigger>
               <TabsTrigger value="starred" className="gap-1.5">
                 <Star className="w-4 h-4" />
                 Starred
                 <Badge variant="secondary" className="ml-1 min-w-[1.25rem] justify-center px-1.5">
-                  {viewCounts.starred}
+                  {tabCounts.starred}
                 </Badge>
               </TabsTrigger>
               <TabsTrigger value="converted" className="gap-1.5">
                 <CheckCircle2 className="w-4 h-4" />
                 Converted
                 <Badge variant="secondary" className="ml-1 min-w-[1.25rem] justify-center px-1.5">
-                  {viewCounts.converted}
+                  {tabCounts.converted}
                 </Badge>
               </TabsTrigger>
               <TabsTrigger value="archived" className="gap-1.5">
                 <Archive className="w-4 h-4" />
                 Archived
                 <Badge variant="secondary" className="ml-1 min-w-[1.25rem] justify-center px-1.5">
-                  {viewCounts.archived}
+                  {tabCounts.archived}
                 </Badge>
               </TabsTrigger>
               </TabsList>
@@ -366,25 +472,68 @@ export default function EmailInbox() {
                 className="h-full"
               />
             ) : (
-              filteredEmails.map(email => (
-                <EmailListItem
-                  key={email.id}
-                  email={email}
-                  users={users}
-                  tasks={tasks}
-                  isSelected={selectedEmails.includes(email.id)}
-                  isActive={email.id === selectedEmailId}
-                  onSelect={() => {
-                    setSelectedEmails(prev => 
-                      prev.includes(email.id)
-                        ? prev.filter(id => id !== email.id)
-                        : [...prev, email.id]
-                    );
-                  }}
-                  onClick={() => handleSelectEmail(email)}
-                  onStar={() => handleStarEmail(email)}
-                />
-              ))
+              <>
+                {filteredEmails.map(email => (
+                  <EmailListItem
+                    key={email.id}
+                    email={email}
+                    users={users}
+                    tasks={tasks}
+                    isSelected={selectedEmails.includes(email.id)}
+                    isActive={email.id === selectedEmailId}
+                    onSelect={() => {
+                      setSelectedEmails(prev => 
+                        prev.includes(email.id)
+                          ? prev.filter(id => id !== email.id)
+                          : [...prev, email.id]
+                      );
+                    }}
+                    onClick={() => handleSelectEmail(email)}
+                    onStar={() => handleStarEmail(email)}
+                  />
+                ))}
+                {(hasNextPage || showSyncOlder) && (
+                  <div className="p-4 border-t border-slate-200 dark:border-slate-700 space-y-2">
+                    {hasNextPage && (
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => fetchNextPage()}
+                        disabled={isFetchingNextPage}
+                      >
+                        {isFetchingNextPage ? (
+                          <>
+                            <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                            Loading...
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDown className="w-4 h-4 mr-2" />
+                            Load more ({EMAIL_LIST_PAGE_SIZE})
+                          </>
+                        )}
+                      </Button>
+                    )}
+                    {showSyncOlder && (
+                      <Button
+                        variant="secondary"
+                        className="w-full"
+                        onClick={handleSyncOlder}
+                        disabled={syncInboxMutation.isPending}
+                      >
+                        {syncInboxMutation.isPending ? (
+                          <>
+                            <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                            Syncing...
+                          </>
+                        ) : (
+                          'Sync older emails'
+                        )}
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </>
             )}
           </ScrollArea>
         </div>
