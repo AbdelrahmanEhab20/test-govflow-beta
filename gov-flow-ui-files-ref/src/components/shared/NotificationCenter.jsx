@@ -1,15 +1,19 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { getCurrentUser } from '@/api/authApi';
 import { listNotificationsForUser, markNotificationRead, deleteNotification } from '@/api/notificationsApi';
-import { Bell, Check, Trash2, X } from 'lucide-react';
+import { Bell, Check, Trash2, X, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { formatDistanceToNow } from 'date-fns';
 import ConfirmDeleteDialog from '@/components/shared/ConfirmDeleteDialog';
+import { createPageUrl } from '@/utils';
+import { getNotificationRoute, notificationHasNavigation } from '@/utils/notificationRoutes';
 
 export default function NotificationCenter({ isOpen, onClose }) {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [notificationToDelete, setNotificationToDelete] = useState(null);
 
   const { data: user } = useQuery({
@@ -41,6 +45,18 @@ export default function NotificationCenter({ isOpen, onClose }) {
   const markAllAsRead = async () => {
     for (const notif of notifications.filter(n => !n.is_read)) {
       await markAsReadMutation.mutateAsync(notif.id);
+    }
+  };
+
+  const handleNotificationClick = async (notif) => {
+    if (!notif.is_read) {
+      await markAsReadMutation.mutateAsync(notif.id);
+    }
+
+    const route = getNotificationRoute(notif);
+    if (route) {
+      navigate(createPageUrl(route));
+      onClose();
     }
   };
 
@@ -118,7 +134,9 @@ export default function NotificationCenter({ isOpen, onClose }) {
             </div>
           ) : (
             <div className="divide-y dark:divide-slate-800">
-              {notifications.map((notif) => (
+              {notifications.map((notif) => {
+                const canNavigate = notificationHasNavigation(notif);
+                return (
                 <div
                   key={notif.id}
                   className={`p-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors ${
@@ -126,26 +144,47 @@ export default function NotificationCenter({ isOpen, onClose }) {
                   }`}
                 >
                   <div className="flex gap-3">
-                    <div className="text-2xl flex-shrink-0">
-                      {getNotificationIcon(notif.type)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-slate-900 dark:text-white text-sm">
-                        {notif.title}
-                      </h3>
-                      <p className="text-slate-600 dark:text-slate-300 text-xs mt-1">
-                        {notif.message}
-                      </p>
-                      <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">
-                        {formatDistanceToNow(new Date(notif.created_date), { addSuffix: true })}
-                      </p>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleNotificationClick(notif)}
+                      className={`flex gap-3 flex-1 min-w-0 text-left ${
+                        canNavigate ? 'cursor-pointer group' : 'cursor-default'
+                      }`}
+                    >
+                      <div className="text-2xl flex-shrink-0">
+                        {getNotificationIcon(notif.type)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1">
+                          <h3 className="font-medium text-slate-900 dark:text-white text-sm">
+                            {notif.title}
+                          </h3>
+                          {canNavigate && (
+                            <ChevronRight className="w-4 h-4 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                          )}
+                        </div>
+                        <p className="text-slate-600 dark:text-slate-300 text-xs mt-1">
+                          {notif.message}
+                        </p>
+                        <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">
+                          {formatDistanceToNow(new Date(notif.created_date), { addSuffix: true })}
+                        </p>
+                        {canNavigate && (
+                          <p className="text-blue-600 dark:text-blue-400 text-xs mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            Click to view
+                          </p>
+                        )}
+                      </div>
+                    </button>
                     <div className="flex gap-1 flex-shrink-0">
                       {!notif.is_read && (
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => markAsReadMutation.mutate(notif.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            markAsReadMutation.mutate(notif.id);
+                          }}
                           className="h-6 w-6"
                         >
                           <Check className="w-4 h-4" />
@@ -154,7 +193,10 @@ export default function NotificationCenter({ isOpen, onClose }) {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => setNotificationToDelete(notif)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setNotificationToDelete(notif);
+                        }}
                         className="h-6 w-6 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -162,7 +204,8 @@ export default function NotificationCenter({ isOpen, onClose }) {
                     </div>
                   </div>
                 </div>
-              ))}
+              );
+              })}
             </div>
           )}
         </ScrollArea>

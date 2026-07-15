@@ -24,7 +24,7 @@ import { useNodeBackend } from "@/api/nodeBackendClient";
 import { startOutlookConnect } from "@/api/outlookApi";
 import { startGmailConnect } from "@/api/googleApi";
 
-export default function AddMailboxDialog({ open, onOpenChange, user }) {
+export default function AddMailboxDialog({ open, onOpenChange, user, oauthReturnTo = "/EmailInbox" }) {
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [provider, setProvider] = useState("outlook");
@@ -83,11 +83,11 @@ export default function AddMailboxDialog({ open, onOpenChange, user }) {
     setError("");
     try {
       if (provider === "outlook") {
-        await startOutlookConnect();
+        await startOutlookConnect(oauthReturnTo);
         return;
       }
       if (provider === "gmail") {
-        await startGmailConnect();
+        await startGmailConnect(oauthReturnTo);
       }
     } catch (err) {
       toast({

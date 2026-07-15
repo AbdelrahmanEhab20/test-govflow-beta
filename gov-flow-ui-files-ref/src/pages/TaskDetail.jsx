@@ -42,6 +42,8 @@ import PriorityBadge from "../components/shared/PriorityBadge";
 import ProgressBar from "../components/shared/ProgressBar";
 import UserAvatar from "../components/shared/UserAvatar";
 import SubtaskList from "../components/tasks/SubtaskList";
+import RelatedTasksSection from "../components/tasks/RelatedTasksSection";
+import TaskDependencyManager from "../components/tasks/TaskDependencyManager";
 import CommentsList from "../components/tasks/CommentsList";
 import { ROLES } from "@/components/shared/rbac";
 
@@ -287,6 +289,19 @@ export default function TaskDetail() {
                 </CardContent>
               </Card>
             }
+
+            {/* Related Tasks */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Related Tasks</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <RelatedTasksSection taskId={taskId} />
+              </CardContent>
+            </Card>
+
+            {/* Advanced Dependencies */}
+            <TaskDependencyManager taskId={taskId} />
 
             {/* Subtasks */}
             <Card>

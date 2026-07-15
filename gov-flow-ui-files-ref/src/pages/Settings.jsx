@@ -24,7 +24,7 @@ import { getGmailStatus, startGmailConnect } from "@/api/googleApi";
 import { useNodeBackend } from "@/api/nodeBackendClient";
 import AddMailboxDialog from "@/components/email/AddMailboxDialog";
 import ConfirmDeleteDialog from "@/components/shared/ConfirmDeleteDialog";
-import { syncMailboxInbox } from "@/api/emailApi";
+import { useMailboxOAuthCallback } from "@/hooks/useMailboxOAuthCallback";
 import { Badge } from "@/components/ui/badge";
 import { Trash2, Plus } from "lucide-react";
 
@@ -82,99 +82,7 @@ export default function Settings() {
     }
   }, [user]);
 
-  React.useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const connected = params.get('ms_connected');
-    const googleConnected = params.get('google_connected');
-    const reason = params.get('reason');
-
-    if (connected === '1') {
-      toast({
-        title: 'Microsoft connected',
-        description: 'Your Outlook mailbox is now connected.',
-      });
-      refetchOutlookStatus();
-
-      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
-      queryClient.invalidateQueries({ queryKey: ['emails'] });
-
-      if (useNodeBackend) {
-        (async () => {
-          try {
-            await syncMailboxInbox('outlook');
-          } catch (err) {
-            toast({
-              variant: 'destructive',
-              title: 'Inbox sync failed',
-              description: err?.message || 'Please try refreshing from Email Inbox.',
-            });
-          } finally {
-            queryClient.invalidateQueries({ queryKey: ['emails'] });
-          }
-        })();
-      }
-
-      params.delete('ms_connected');
-      params.delete('reason');
-      const newSearch = params.toString();
-      window.history.replaceState({}, '', `${window.location.pathname}${newSearch ? `?${newSearch}` : ''}`);
-    }
-
-    if (connected === '0') {
-      toast({
-        variant: 'destructive',
-        title: 'Microsoft connection failed',
-        description: reason || 'OAuth flow did not complete.',
-      });
-      params.delete('ms_connected');
-      params.delete('reason');
-      const newSearch = params.toString();
-      window.history.replaceState({}, '', `${window.location.pathname}${newSearch ? `?${newSearch}` : ''}`);
-    }
-    if (googleConnected === '1') {
-      toast({
-        title: 'Google connected',
-        description: 'Your Gmail mailbox is now connected.',
-      });
-      refetchGmailStatus();
-
-      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
-      queryClient.invalidateQueries({ queryKey: ['emails'] });
-
-      if (useNodeBackend) {
-        (async () => {
-          try {
-            await syncMailboxInbox('gmail');
-          } catch (err) {
-            toast({
-              variant: 'destructive',
-              title: 'Inbox sync failed',
-              description: err?.message || 'Please try refreshing from Email Inbox.',
-            });
-          } finally {
-            queryClient.invalidateQueries({ queryKey: ['emails'] });
-          }
-        })();
-      }
-
-      params.delete('google_connected');
-      params.delete('reason');
-      const newSearch = params.toString();
-      window.history.replaceState({}, '', `${window.location.pathname}${newSearch ? `?${newSearch}` : ''}`);
-    }
-
-    if (googleConnected === '0') {
-      toast({
-        variant: 'destructive',
-        title: 'Google connection failed',
-        description: reason || 'OAuth flow did not complete.',
-      });
-      params.delete('google_connected');
-      params.delete('reason');
-      const newSearch = params.toString();
-      window.history.replaceState({}, '', `${window.location.pathname}${newSearch ? `?${newSearch}` : ''}`);
-    }
-  }, [toast, refetchOutlookStatus, refetchGmailStatus]);
+  useMailboxOAuthCallback({ refetchOutlookStatus, refetchGmailStatus });
 
   const handleSaveNotifications = () => {
     updateMutation.mutate({
@@ -184,7 +92,7 @@ export default function Settings() {
 
   const handleConnectMicrosoft = async () => {
     try {
-      await startOutlookConnect();
+      await startOutlookConnect('/Settings');
     } catch (error) {
       toast({
         variant: 'destructive',
@@ -196,7 +104,7 @@ export default function Settings() {
 
   const handleConnectGoogle = async () => {
     try {
-      await startGmailConnect();
+      await startGmailConnect('/Settings');
     } catch (error) {
       toast({
         variant: 'destructive',
@@ -501,6 +409,7 @@ export default function Settings() {
                 open={addMailboxOpen}
                 onOpenChange={setAddMailboxOpen}
                 user={user}
+                oauthReturnTo="/Settings"
               />
             </CardContent>
           </Card>

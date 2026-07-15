@@ -4,10 +4,12 @@ import { listTasks, listTaskDependenciesByDependent, createTaskDependency, delet
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Link2, Trash2, Plus } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Link2, Trash2, Plus, ChevronRight } from 'lucide-react';
 import ConfirmDeleteDialog from '@/components/shared/ConfirmDeleteDialog';
+import { createPageUrl } from '@/utils';
 
-export default function TaskDependencyManager({ taskId, dependencies = [] }) {
+export default function TaskDependencyManager({ taskId }) {
   const queryClient = useQueryClient();
   const [showAddDependency, setShowAddDependency] = useState(false);
   const [selectedDepId, setSelectedDepId] = useState('');
@@ -25,6 +27,14 @@ export default function TaskDependencyManager({ taskId, dependencies = [] }) {
     queryFn: () => listTaskDependenciesByDependent(taskId),
   });
 
+  const advancedDependencies = taskDependencies.filter(
+    (dep) => dep.dependency_type !== 'related',
+  );
+
+  const linkedPrerequisiteIds = new Set(
+    taskDependencies.map((dep) => dep.prerequisite_task_id),
+  );
+
   const handleAddDependency = async () => {
     if (!selectedDepId) return;
 
@@ -35,6 +45,7 @@ export default function TaskDependencyManager({ taskId, dependencies = [] }) {
       is_active: true
     });
     queryClient.invalidateQueries({ queryKey: ['taskDependencies', taskId] });
+    queryClient.invalidateQueries({ queryKey: ['relatedTasks', 'out', taskId] });
     setSelectedDepId('');
     setDepType('finish_to_start');
     setShowAddDependency(false);
@@ -45,6 +56,7 @@ export default function TaskDependencyManager({ taskId, dependencies = [] }) {
     try {
       await deleteTaskDependency(depId);
       queryClient.invalidateQueries({ queryKey: ['taskDependencies', taskId] });
+    queryClient.invalidateQueries({ queryKey: ['relatedTasks', 'out', taskId] });
     } finally {
       setIsRemoving(false);
     }
@@ -70,19 +82,25 @@ export default function TaskDependencyManager({ taskId, dependencies = [] }) {
       <CardHeader>
         <div className="flex items-center gap-2">
           <Link2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-          <CardTitle>Task Dependencies</CardTitle>
+          <CardTitle>Dependencies (advanced)</CardTitle>
         </div>
-        <CardDescription>Define prerequisites that must be completed before this task</CardDescription>
+        <CardDescription>
+          Blocking prerequisites — finish-to-start and other scheduling rules
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {taskDependencies.length > 0 && (
+        {advancedDependencies.length > 0 && (
           <div className="space-y-2">
-            {taskDependencies.map((dep) => (
+            {advancedDependencies.map((dep) => (
               <div key={dep.id} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
-                <div>
-                  <p className="font-medium text-slate-900 dark:text-white text-sm">
-                    {getPrerequisiteTitle(dep.prerequisite_task_id)}
-                  </p>
+                <div className="flex-1 min-w-0">
+                  <Link
+                    to={createPageUrl(`TaskDetail?id=${dep.prerequisite_task_id}`)}
+                    className="flex items-center gap-1 font-medium text-blue-600 dark:text-blue-400 text-sm hover:underline"
+                  >
+                    <span className="truncate">{getPrerequisiteTitle(dep.prerequisite_task_id)}</span>
+                    <ChevronRight className="w-4 h-4 shrink-0 opacity-60" />
+                  </Link>
                   <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
                     {getDependencyLabel(dep.dependency_type)}
                   </p>
@@ -108,8 +126,8 @@ export default function TaskDependencyManager({ taskId, dependencies = [] }) {
               </SelectTrigger>
               <SelectContent>
                 {allTasks
-                  .filter(t => t.id !== taskId)
-                  .map(task => (
+                  .filter((t) => t.id !== taskId && !linkedPrerequisiteIds.has(t.id))
+                  .map((task) => (
                     <SelectItem key={task.id} value={task.id}>
                       {task.pillar}
                     </SelectItem>

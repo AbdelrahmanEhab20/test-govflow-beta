@@ -51,6 +51,7 @@ import EmailViewer from "../components/email/EmailViewer";
 import MailboxSelector from "../components/email/MailboxSelector";
 import EmptyState from "../components/shared/EmptyState";
 import { useToast } from "@/components/ui/use-toast";
+import { useMailboxOAuthCallback } from "@/hooks/useMailboxOAuthCallback";
 
 const CATEGORY_OPTIONS = [
   { value: "all", label: "All Categories" },
@@ -102,6 +103,8 @@ export default function EmailInbox() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+
+  useMailboxOAuthCallback();
 
   const { data: currentUser } = useQuery({
     queryKey: ['currentUser'],

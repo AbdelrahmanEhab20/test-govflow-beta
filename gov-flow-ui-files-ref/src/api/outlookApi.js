@@ -7,11 +7,14 @@ export async function getOutlookStatus() {
   return nodeRequest('/auth/microsoft/status');
 }
 
-export async function startOutlookConnect() {
+export async function startOutlookConnect(returnTo = '/EmailInbox') {
   if (!useNodeBackend) {
     throw new Error('Outlook connect is only available in node backend mode');
   }
-  const data = await nodeRequest('/auth/microsoft/authorize-url', { method: 'POST' });
+  const data = await nodeRequest('/auth/microsoft/authorize-url', {
+    method: 'POST',
+    body: { returnTo },
+  });
   if (!data?.url) {
     throw new Error('Microsoft OAuth URL was not returned by backend');
   }

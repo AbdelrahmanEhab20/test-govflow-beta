@@ -14,6 +14,10 @@ import {
   loadActiveRoutingRules,
   applyRoutingRulesToEmail,
 } from '../services/routingEngine.js';
+import {
+  buildOAuthRedirectUrl,
+  normalizeOAuthReturnPath,
+} from '../utils/oauthReturnPath.js';
 
 const router = Router();
 
@@ -119,6 +123,7 @@ router.post(
     const state = crypto.randomBytes(16).toString('hex');
     req.session.oauthState = state;
     req.session.userId = req.user.id;
+    req.session.oauthReturnTo = normalizeOAuthReturnPath(req.body?.returnTo);
 
     const url = await getMicrosoftAuthUrl(state);
     res.json({ url });
@@ -132,10 +137,16 @@ router.get(
     const { code, state, error, error_description: errorDescription } = req.query;
 
     if (error) {
-      const redirectUrl = new URL('/Settings', config.frontendUrl);
-      redirectUrl.searchParams.set('ms_connected', '0');
-      redirectUrl.searchParams.set('reason', String(errorDescription || error));
-      return res.redirect(redirectUrl.toString());
+      return res.redirect(
+        buildOAuthRedirectUrl({
+          frontendUrl: config.frontendUrl,
+          returnPath: req.session?.oauthReturnTo,
+          params: {
+            ms_connected: '0',
+            reason: String(errorDescription || error),
+          },
+        }),
+      );
     }
 
     if (!code || !state) {
@@ -189,10 +200,16 @@ router.get(
     await user.save();
 
     req.session.oauthState = null;
+    const returnPath = req.session.oauthReturnTo;
+    req.session.oauthReturnTo = null;
 
-    const redirectUrl = new URL('/Settings', config.frontendUrl);
-    redirectUrl.searchParams.set('ms_connected', '1');
-    return res.redirect(redirectUrl.toString());
+    return res.redirect(
+      buildOAuthRedirectUrl({
+        frontendUrl: config.frontendUrl,
+        returnPath,
+        params: { ms_connected: '1' },
+      }),
+    );
   })
 );
 

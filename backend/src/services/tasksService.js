@@ -282,6 +282,26 @@ export async function listTaskDependenciesByDependent(dependentTaskId) {
 }
 
 export async function createTaskDependency(data) {
+  const dependentId = String(data?.dependent_task_id || '').trim();
+  const prerequisiteId = String(data?.prerequisite_task_id || '').trim();
+
+  if (!dependentId || !prerequisiteId) {
+    throw createHttpError(400, 'dependent_task_id and prerequisite_task_id are required', 'INVALID_DEPENDENCY');
+  }
+  if (dependentId === prerequisiteId) {
+    throw createHttpError(400, 'A task cannot depend on itself', 'SELF_DEPENDENCY');
+  }
+
+  const existing = await TaskDependency.findOne(
+    withTenant({
+      dependent_task_id: dependentId,
+      prerequisite_task_id: prerequisiteId,
+    }),
+  ).lean();
+  if (existing) {
+    throw createHttpError(409, 'This task link already exists', 'DUPLICATE_DEPENDENCY');
+  }
+
   const now = nowIso();
   const doc = await TaskDependency.create({
     id: data.id || uuidv4(),
