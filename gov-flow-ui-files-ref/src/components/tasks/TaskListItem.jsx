@@ -39,6 +39,7 @@ import PriorityBadge from "../shared/PriorityBadge";
 import ProgressBar from "../shared/ProgressBar";
 import UserAvatar from "../shared/UserAvatar";
 import { ROLES } from "../shared/rbac";
+import { buildTaskStatusPatch } from "@/lib/taskAggregation";
 
 const STATUS_OPTIONS = ['not_started', 'in_progress', 'completed', 'on_hold', 'delayed'];
 
@@ -71,24 +72,29 @@ export default function TaskListItem({
   const canDeleteTask = isHigherRole;
 
   const handleStatusChange = (newStatus) => {
-    const updates = { status: newStatus };
-    if (newStatus === 'completed') {
-      updates.completion_percent = 100;
-    }
+    const updates = buildTaskStatusPatch({ status: newStatus }, task, workflowStages);
     onUpdate(task.id, updates);
     setIsEditing(null);
   };
 
   const handleCompletionChange = (value) => {
-    const completion = parseInt(value);
-    const updates = { completion_percent: completion };
-    if (completion === 100) {
-      updates.status = 'completed';
-    } else if (task.status === 'completed') {
-      updates.status = 'in_progress';
-    }
+    const completion = parseInt(value, 10);
+    const updates = buildTaskStatusPatch(
+      { completion_percent: completion },
+      task,
+      workflowStages
+    );
     onUpdate(task.id, updates);
     setIsEditing(null);
+  };
+
+  const handleMoveToStage = (stageId) => {
+    const updates = buildTaskStatusPatch(
+      { workflow_stage_id: stageId },
+      task,
+      workflowStages
+    );
+    onUpdate(task.id, updates);
   };
 
   return (
@@ -240,11 +246,11 @@ export default function TaskListItem({
               {workflowStages.map(stage => (
                 <DropdownMenuItem
                   key={stage.id}
-                  onClick={() => onUpdate(task.id, { workflow_stage_id: stage.id })}
+                  onClick={() => handleMoveToStage(stage.id)}
                   disabled={
                     task.workflow_stage_id === stage.id ||
                     !canProgressTask ||
-                    (!canCompleteTask && ['completed', 'approved'].includes(String(stage.name || '').toLowerCase()))
+                    (!canCompleteTask && ['completed', 'approved', 'done'].includes(String(stage.name || '').toLowerCase()))
                   }
                 >
                   {stage.name}

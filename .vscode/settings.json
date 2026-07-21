@@ -1,5 +1,5 @@
 {
-  "cSpell.enabled": true,
+  "cSpell.enabled": false,
   "cSpell.language": "en,ar",
   "cSpell.ignoreRandomStrings": true,
   "cSpell.import": ["./cspell.json"],

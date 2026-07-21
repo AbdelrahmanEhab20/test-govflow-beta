@@ -31,7 +31,9 @@ import EmptyState from "../components/shared/EmptyState";
 import { getCurrentUser } from "@/api/authApi";
 import { listTasks, updateTask, deleteTask } from "@/api/tasksApi";
 import { listUsers } from "@/api/usersApi";
+import { listWorkflowStages } from "@/api/workflowApi";
 import { ROLES } from "@/components/shared/rbac";
+import { buildTaskStatusPatch } from "@/lib/taskAggregation";
 import { toast } from "react-hot-toast";
 
 export default function Tasks() {
@@ -65,6 +67,11 @@ export default function Tasks() {
   const { data: users = [] } = useQuery({
     queryKey: ['users'],
     queryFn: () => listUsers(),
+  });
+
+  const { data: workflowStages = [] } = useQuery({
+    queryKey: ['workflowStages'],
+    queryFn: () => listWorkflowStages({ is_active: true }, 'order'),
   });
 
   const updateTaskMutation = useMutation({
@@ -181,10 +188,13 @@ export default function Tasks() {
       return;
     }
     selectedTasks.forEach(id => {
-      updateTaskMutation.mutate({ 
-        id, 
-        data: { status: 'completed', completion_percent: 100 } 
-      });
+      const task = tasks.find((t) => t.id === id);
+      const data = buildTaskStatusPatch(
+        { status: 'completed', completion_percent: 100 },
+        task || {},
+        workflowStages
+      );
+      updateTaskMutation.mutate({ id, data });
     });
     setSelectedTasks([]);
   };

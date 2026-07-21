@@ -19,7 +19,7 @@ import KanbanTaskCard from '../components/kanban/KanbanTaskCard';
 import KanbanFilters from '../components/kanban/KanbanFilters';
 import TaskListForBacklog from '../components/kanban/TaskListForBacklog';
 import { ROLES } from '../components/shared/rbac';
-import { getNormalizedTaskStatus } from '@/lib/taskAggregation';
+import { buildTaskStatusPatch } from '@/lib/taskAggregation';
 
 export default function KanbanBoard() {
   const navigate = useNavigate();
@@ -168,27 +168,19 @@ export default function KanbanBoard() {
     const targetStage = workflowStages.find((s) => s.id === targetStageId);
     const targetStageName = String(targetStage?.name || '').toLowerCase();
 
-    if (!canMarkDone() && (targetStageName === 'completed' || targetStageName === 'approved')) {
+    if (!canMarkDone() && (targetStageName === 'completed' || targetStageName === 'approved' || targetStageName === 'done')) {
       toast.error('Only managers/admins can move tasks to completed.');
       return;
     }
 
-    const nextStatus = getNormalizedTaskStatus(
-      { ...task, workflow_stage_id: targetStage?.id },
+    const patch = buildTaskStatusPatch(
+      {
+        workflow_stage_id: targetStageId,
+        last_activity_at: new Date().toISOString(),
+      },
+      task,
       workflowStages
     );
-
-    const patch = {
-      workflow_stage_id: targetStageId,
-      last_activity_at: new Date().toISOString(),
-    };
-
-    if (nextStatus && nextStatus !== task.status) {
-      patch.status = nextStatus;
-      if (nextStatus === 'completed' && (task.completion_percent || 0) < 100) {
-        patch.completion_percent = 100;
-      }
-    }
 
     updateTaskMutation.mutate({
       taskId,

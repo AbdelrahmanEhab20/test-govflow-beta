@@ -4,6 +4,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getTaskById, createTask, updateTask } from "@/api/tasksApi";
 import { getEmailById, updateEmail } from "@/api/emailApi";
 import { listUsers } from "@/api/usersApi";
+import { listWorkflowStages } from "@/api/workflowApi";
+import { buildTaskStatusPatch } from "@/lib/taskAggregation";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "../utils";
 import { ArrowLeft, Save, Loader2, Wand2 } from "lucide-react";
@@ -91,6 +93,11 @@ export default function TaskForm() {
     queryFn: () => listUsers()
   });
 
+  const { data: workflowStages = [] } = useQuery({
+    queryKey: ['workflowStages'],
+    queryFn: () => listWorkflowStages({ is_active: true }, 'order'),
+  });
+
   useEffect(() => {
     if (existingTask) {
       setFormData(existingTask);
@@ -144,8 +151,18 @@ export default function TaskForm() {
       (id) => users.find((u) => u.id === id)?.full_name
     ).filter(Boolean);
 
+    const synced = buildTaskStatusPatch(
+      {
+        status: formData.status,
+        completion_percent: formData.completion_percent,
+      },
+      existingTask || formData,
+      workflowStages
+    );
+
     const dataToSave = {
       ...formData,
+      ...synced,
       lead_user_name: leadUser?.full_name,
       support_user_names: supportUserNames,
       last_activity_at: new Date().toISOString()
@@ -574,11 +591,12 @@ export default function TaskForm() {
                 <Select
                   value={formData.status}
                   onValueChange={(value) => {
-                    const newData = { ...formData, status: value };
-                    if (value === 'completed') {
-                      newData.completion_percent = 100;
-                    }
-                    setFormData(newData);
+                    const synced = buildTaskStatusPatch(
+                      { status: value },
+                      formData,
+                      workflowStages
+                    );
+                    setFormData((prev) => ({ ...prev, ...synced }));
                   }}>
 
                   <SelectTrigger className="mt-1.5">
@@ -599,14 +617,13 @@ export default function TaskForm() {
                 <Select
                   value={String(formData.completion_percent)}
                   onValueChange={(value) => {
-                    const percent = parseInt(value);
-                    const newData = { ...formData, completion_percent: percent };
-                    if (percent === 100 && formData.status !== 'completed') {
-                      newData.status = 'completed';
-                    } else if (percent < 100 && formData.status === 'completed') {
-                      newData.status = 'in_progress';
-                    }
-                    setFormData(newData);
+                    const percent = parseInt(value, 10);
+                    const synced = buildTaskStatusPatch(
+                      { completion_percent: percent },
+                      formData,
+                      workflowStages
+                    );
+                    setFormData((prev) => ({ ...prev, ...synced }));
                   }}>
 
                   <SelectTrigger className="mt-1.5">

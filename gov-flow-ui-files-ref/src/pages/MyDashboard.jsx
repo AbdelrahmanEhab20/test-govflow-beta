@@ -128,7 +128,7 @@ export default function MyDashboard() {
   const [showAddLinkRow, setShowAddLinkRow] = useState(false);
 
   const { data: tasks = [] } = useQuery({
-    queryKey: ["dashboardTasks"],
+    queryKey: ["tasks"],
     queryFn: () => listTasks({ orderBy: "-created_date", limit: 200 }),
   });
 

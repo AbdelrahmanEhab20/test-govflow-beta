@@ -9,6 +9,7 @@
     "start": "node src/server.js",
     "seed": "node scripts/seed.js",
     "normalize:departments": "node scripts/normalize-departments.js",
+    "sync:task-stages": "node scripts/sync-task-stages.js",
     "lint": "eslint src --ext .js",
     "lint:fix": "eslint src --ext .js --fix"
   },

@@ -31,6 +31,7 @@ import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { listWorkflowStages } from '@/api/workflowApi';
 import { updateTask, deleteTask } from '@/api/tasksApi';
 import { ROLES } from '@/components/shared/rbac';
+import { buildTaskStatusPatch } from '@/lib/taskAggregation';
 import { toast } from 'react-hot-toast';
 
 export default function TaskListForBacklog({ tasks, getUserName, canDragTask, currentUser }) {
@@ -82,15 +83,16 @@ export default function TaskListForBacklog({ tasks, getUserName, canDragTask, cu
       toast.error('Only managers/admins can complete tasks.');
       return;
     }
-    const completedStage =
-      workflowStages.find((s) => s.name === 'Completed') ||
-      workflowStages.find((s) => s.name === 'Done');
+
+    const data = buildTaskStatusPatch(
+      { status: 'completed', completion_percent: 100 },
+      task,
+      workflowStages
+    );
 
     updateTaskMutation.mutate({
       id: task.id,
-      workflow_stage_id: completedStage?.id || task.workflow_stage_id,
-      status: 'completed',
-      completion_percent: 100,
+      ...data,
     });
   };
 
@@ -98,36 +100,24 @@ export default function TaskListForBacklog({ tasks, getUserName, canDragTask, cu
     const stage = workflowStages.find((s) => s.id === stageId);
     const task = tasks.find((t) => t.id === taskId);
 
-    const statusByStageName = {
-      Planning: 'not_started',
-      Pipeline: 'not_started',
-      'In Progress': 'in_progress',
-      'In Review': 'in_progress',
-      Review: 'in_progress',
-      Completed: 'completed',
-      Approved: 'completed',
-      'On Hold': 'on_hold',
-    };
-
-    let nextStatus = task?.status || 'not_started';
-    if (stage?.name && statusByStageName[stage.name]) {
-      nextStatus = statusByStageName[stage.name];
-    }
-
     if (!canProgressTask(task)) {
       toast.error('You can only move your assigned tasks.');
       return;
     }
-    if (!canCompleteTask && ['completed', 'approved'].includes(String(stage?.name || '').toLowerCase())) {
+    if (!canCompleteTask && ['completed', 'approved', 'done'].includes(String(stage?.name || '').toLowerCase())) {
       toast.error('Only managers/admins can move tasks to completed.');
       return;
     }
 
+    const data = buildTaskStatusPatch(
+      { workflow_stage_id: stageId },
+      task || {},
+      workflowStages
+    );
+
     updateTaskMutation.mutate({
       id: taskId,
-      workflow_stage_id: stageId,
-      status: nextStatus,
-      ...(nextStatus === 'completed' ? { completion_percent: 100 } : {}),
+      ...data,
     });
   };
 
