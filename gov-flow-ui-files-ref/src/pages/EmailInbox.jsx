@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getCurrentUser } from "@/api/authApi";
 import {
@@ -24,6 +24,7 @@ import {
   AlertCircle,
   ChevronDown,
 } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
@@ -52,6 +53,7 @@ import MailboxSelector from "../components/email/MailboxSelector";
 import EmptyState from "../components/shared/EmptyState";
 import { useToast } from "@/components/ui/use-toast";
 import { useMailboxOAuthCallback } from "@/hooks/useMailboxOAuthCallback";
+import { isMailboxAuthError, useInboxAutoSync } from "@/hooks/useInboxAutoSync";
 
 const CATEGORY_OPTIONS = [
   { value: "all", label: "All Categories" },
@@ -190,6 +192,43 @@ export default function EmailInbox() {
     },
   });
 
+  const mutateInboxSyncRef = React.useRef(syncInboxMutation.mutateAsync);
+  mutateInboxSyncRef.current = syncInboxMutation.mutateAsync;
+
+  const selectedProvider = useMemo(() => {
+    const selectedMailbox = currentUser?.mailboxes?.find(
+      (mailbox) => mailbox.email === activeMailbox && mailbox.isActive
+    );
+    return selectedMailbox?.provider || null;
+  }, [currentUser?.mailboxes, activeMailbox]);
+
+  const performInboxSync = useCallback(async () => {
+    if (selectedProvider !== 'gmail' && selectedProvider !== 'outlook') {
+      return null;
+    }
+    return mutateInboxSyncRef.current({ provider: selectedProvider, options: {} });
+  }, [selectedProvider]);
+
+  const onAutoSyncAuthError = useCallback(() => {
+    toast({
+      variant: 'destructive',
+      title: 'Mailbox connection expired',
+      description: 'Reconnect from Settings, then Refresh to resume auto-sync.',
+    });
+  }, [toast]);
+
+  const {
+    authPaused,
+    lastSyncedAt,
+    runSync,
+  } = useInboxAutoSync({
+    enabled: Boolean(useNodeBackend && selectedProvider),
+    provider: selectedProvider,
+    syncFn: performInboxSync,
+    isSyncing: syncInboxMutation.isPending,
+    onAuthError: onAutoSyncAuthError,
+  });
+
   // Filter emails
   const filteredEmails = useMemo(() => {
     let result = [...emails];
@@ -306,28 +345,17 @@ export default function EmailInbox() {
   };
 
   const handleRefresh = async () => {
-    const selectedMailbox = currentUser?.mailboxes?.find((mailbox) => mailbox.email === activeMailbox && mailbox.isActive);
-    const selectedProvider = selectedMailbox?.provider;
-    if (useNodeBackend) {
+    if (useNodeBackend && (selectedProvider === 'gmail' || selectedProvider === 'outlook')) {
       try {
-        if (selectedProvider === 'gmail' || selectedProvider === 'outlook') {
-          const result = await syncInboxMutation.mutateAsync({ provider: selectedProvider, options: {} });
-          if (selectedProvider === 'gmail' && result?.nextPageToken) {
-            setProviderCursor({ provider: 'gmail', pageToken: result.nextPageToken, hasMore: result.hasMore });
-          } else if (selectedProvider === 'outlook') {
-            setProviderCursor({
-              provider: 'outlook',
-              skip: result?.nextSkip ?? 0,
-              hasMore: Boolean(result?.hasMore),
-            });
-          }
-        }
+        await runSync({ manual: true });
       } catch (error) {
-        toast({
-          variant: 'destructive',
-          title: 'Inbox sync failed',
-          description: error?.message || 'Reconnect this mailbox and try again.',
-        });
+        if (!isMailboxAuthError(error)) {
+          toast({
+            variant: 'destructive',
+            title: 'Inbox sync failed',
+            description: error?.message || 'Reconnect this mailbox and try again.',
+          });
+        }
       }
     }
     refetch();
@@ -367,16 +395,32 @@ export default function EmailInbox() {
             <p className="text-slate-500 dark:text-slate-300 mt-1">Department mailbox</p>
           </div>
           
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            {currentUser && <MailboxSelector 
-              user={currentUser} 
-              activeMailbox={activeMailbox}
-              onMailboxChange={setActiveMailbox}
-            />}
-            <Button variant="outline" onClick={handleRefresh} disabled={syncInboxMutation.isPending} className="ml-auto sm:ml-0">
-              <RefreshCw className={`w-4 h-4 mr-2 ${syncInboxMutation.isPending ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
+          <div className="flex flex-col items-stretch sm:items-end gap-1.5 w-full sm:w-auto">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              {currentUser && <MailboxSelector 
+                user={currentUser} 
+                activeMailbox={activeMailbox}
+                onMailboxChange={setActiveMailbox}
+              />}
+              <Button variant="outline" onClick={handleRefresh} disabled={syncInboxMutation.isPending} className="ml-auto sm:ml-0">
+                <RefreshCw className={`w-4 h-4 mr-2 ${syncInboxMutation.isPending ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+            </div>
+            {authPaused ? (
+              <p className="text-xs text-amber-700 dark:text-amber-400 text-left sm:text-right">
+                Reconnect mailbox to resume auto-sync
+              </p>
+            ) : lastSyncedAt ? (
+              <p className="text-xs text-slate-500 dark:text-slate-400 text-left sm:text-right">
+                Last synced {formatDistanceToNow(lastSyncedAt, { addSuffix: true })}
+                {useNodeBackend && selectedProvider ? ' · auto every 5 min' : ''}
+              </p>
+            ) : useNodeBackend && selectedProvider ? (
+              <p className="text-xs text-slate-500 dark:text-slate-400 text-left sm:text-right">
+                Auto-sync every 5 min while this page is open
+              </p>
+            ) : null}
           </div>
         </div>
 
