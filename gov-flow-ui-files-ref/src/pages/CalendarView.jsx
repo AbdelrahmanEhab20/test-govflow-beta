@@ -41,6 +41,8 @@ import CalendarFilters from "../components/calendar/CalendarFilters";
 import CalendarWeekView from "../components/calendar/CalendarWeekView";
 import CalendarDayView from "../components/calendar/CalendarDayView";
 import QuickTaskDialog from "../components/calendar/QuickTaskDialog";
+import { getCurrentUser } from "@/api/authApi";
+import { useEffectiveRole } from "@/lib/EffectiveRoleContext";
 
 const PRIORITY_COLORS = {
   urgent: "bg-red-500",
@@ -50,12 +52,18 @@ const PRIORITY_COLORS = {
 };
 
 export default function CalendarView() {
+  const { isOwnTasksOnly } = useEffectiveRole();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [view, setView] = useState('month');
   const [selectedDate, setSelectedDate] = useState(null);
   const [quickTaskOpen, setQuickTaskOpen] = useState(false);
   const [quickTaskDate, setQuickTaskDate] = useState(null);
   const [filters, setFilters] = useState({ assignee: null, status: null });
+
+  const { data: currentUser } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: () => getCurrentUser(),
+  });
 
   const { data: tasks = [] } = useQuery({
     queryKey: ['tasks'],
@@ -66,6 +74,11 @@ export default function CalendarView() {
     queryKey: ['users'],
     queryFn: () => listUsers(),
   });
+
+  const scopedTasks = useMemo(() => {
+    if (!isOwnTasksOnly || !currentUser?.id) return tasks;
+    return tasks.filter((task) => task.lead_user_id === currentUser.id);
+  }, [tasks, isOwnTasksOnly, currentUser?.id]);
 
   // Generate calendar days
   const calendarDays = useMemo(() => {
@@ -79,12 +92,12 @@ export default function CalendarView() {
 
   // Filter tasks based on assignee and status
   const filteredTasks = useMemo(() => {
-    return tasks.filter(task => {
-      if (filters.assignee && task.lead_user_id !== filters.assignee) return false;
+    return scopedTasks.filter(task => {
+      if (!isOwnTasksOnly && filters.assignee && task.lead_user_id !== filters.assignee) return false;
       if (filters.status && task.status !== filters.status) return false;
       return true;
     });
-  }, [tasks, filters]);
+  }, [scopedTasks, filters, isOwnTasksOnly]);
 
   // Group filtered tasks by date
   const tasksByDate = useMemo(() => {
@@ -178,7 +191,7 @@ export default function CalendarView() {
           </div>
         </div>
 
-        <CalendarFilters users={users} filters={filters} onFilterChange={setFilters} />
+        <CalendarFilters users={users} filters={filters} onFilterChange={setFilters} hideAssigneeFilter={isOwnTasksOnly} />
       </div>
 
       {view === 'month' && (

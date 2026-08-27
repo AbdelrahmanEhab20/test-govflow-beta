@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
 import { createPageUrl } from "../utils";
@@ -34,10 +34,12 @@ import { listUsers } from "@/api/usersApi";
 import { listWorkflowStages } from "@/api/workflowApi";
 import { ROLES } from "@/components/shared/rbac";
 import { buildTaskStatusPatch } from "@/lib/taskAggregation";
+import { useEffectiveRole } from "@/lib/EffectiveRoleContext";
 import { toast } from "react-hot-toast";
 
 export default function Tasks() {
-  const [activeView, setActiveView] = useState('all');
+  const { isOwnTasksOnly } = useEffectiveRole();
+  const [activeView, setActiveView] = useState(isOwnTasksOnly ? 'my' : 'all');
   const [filters, setFilters] = useState({
     search: '',
     status: 'all',
@@ -74,6 +76,17 @@ export default function Tasks() {
     queryFn: () => listWorkflowStages({ is_active: true }, 'order'),
   });
 
+  useEffect(() => {
+    if (isOwnTasksOnly && activeView === 'all') {
+      setActiveView('my');
+    }
+  }, [isOwnTasksOnly, activeView]);
+
+  const scopedTasks = useMemo(() => {
+    if (!isOwnTasksOnly || !currentUser?.id) return tasks;
+    return tasks.filter((t) => t.lead_user_id === currentUser.id);
+  }, [tasks, isOwnTasksOnly, currentUser?.id]);
+
   const updateTaskMutation = useMutation({
     mutationFn: ({ id, data }) => updateTask(id, data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
@@ -92,13 +105,13 @@ export default function Tasks() {
 
   // Get unique pillars
   const pillars = useMemo(() => {
-    const uniquePillars = [...new Set(tasks.map(t => t.pillar).filter(Boolean))];
+    const uniquePillars = [...new Set(scopedTasks.map(t => t.pillar).filter(Boolean))];
     return uniquePillars.sort();
-  }, [tasks]);
+  }, [scopedTasks]);
 
   // Filter tasks based on view and filters
   const filteredTasks = useMemo(() => {
-    let result = [...tasks];
+    let result = [...scopedTasks];
 
     // Apply view filter
     switch (activeView) {
@@ -130,6 +143,9 @@ export default function Tasks() {
       case 'blocked':
         result = result.filter(t => t.status === 'on_hold' || t.status === 'delayed');
         break;
+      case 'all':
+      default:
+        break;
     }
 
     // Apply filters
@@ -149,7 +165,7 @@ export default function Tasks() {
       result = result.filter(t => t.priority === filters.priority);
     }
 
-    if (filters.lead !== 'all') {
+    if (!isOwnTasksOnly && filters.lead !== 'all') {
       result = result.filter(t => t.lead_user_id === filters.lead);
     }
 
@@ -162,7 +178,7 @@ export default function Tasks() {
     }
 
     return result;
-  }, [tasks, activeView, filters, currentUser?.id]);
+  }, [scopedTasks, activeView, filters, currentUser?.id, isOwnTasksOnly]);
 
   const handleUpdateTask = (id, data) => {
     updateTaskMutation.mutate({ id, data });
@@ -268,8 +284,9 @@ export default function Tasks() {
       <TaskViewTabs 
         activeView={activeView}
         onViewChange={setActiveView}
-        tasks={tasks}
+        tasks={scopedTasks}
         currentUserId={currentUser?.id}
+        ownTasksOnly={isOwnTasksOnly}
       />
 
       {/* Filters */}
@@ -278,6 +295,7 @@ export default function Tasks() {
         onFilterChange={setFilters}
         users={users}
         pillars={pillars}
+        hideLeadFilter={isOwnTasksOnly}
       />
 
       {/* Bulk Actions */}

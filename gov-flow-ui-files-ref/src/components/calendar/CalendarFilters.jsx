@@ -9,11 +9,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 
-export default function CalendarFilters({ users, filters, onFilterChange }) {
-  const hasActiveFilters = filters.assignee || filters.status;
+export default function CalendarFilters({ users, filters, onFilterChange, hideAssigneeFilter = false }) {
+  const hasActiveFilters = (!hideAssigneeFilter && filters.assignee) || filters.status;
 
   return (
     <div className="flex flex-wrap gap-3 items-center">
+      {!hideAssigneeFilter && (
       <Select value={filters.assignee || ""} onValueChange={(value) => onFilterChange({ ...filters, assignee: value || null })}>
         <SelectTrigger className="w-40">
           <SelectValue placeholder="Filter by assignee" />
@@ -27,6 +28,7 @@ export default function CalendarFilters({ users, filters, onFilterChange }) {
           ))}
         </SelectContent>
       </Select>
+      )}
 
       <Select value={filters.status || ""} onValueChange={(value) => onFilterChange({ ...filters, status: value || null })}>
         <SelectTrigger className="w-40">

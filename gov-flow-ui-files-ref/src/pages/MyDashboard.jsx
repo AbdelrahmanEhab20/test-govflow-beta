@@ -25,6 +25,7 @@ import { listUsers } from "@/api/usersApi";
 import { listWorkflowStages } from "@/api/workflowApi";
 import { createPageUrl } from "@/utils";
 import { useAuth } from "@/lib/AuthContext";
+import { useEffectiveRole } from "@/lib/EffectiveRoleContext";
 import { Button } from "@/components/ui/button";
 import { getKanbanStageCounts } from "@/lib/taskAggregation";
 
@@ -117,6 +118,7 @@ function WidgetShell({ id, title, onRemove, editing, children, className = "" })
 
 export default function MyDashboard() {
   const { user } = useAuth();
+  const { isOwnTasksOnly } = useEffectiveRole();
   const storageKey = `govflow_dashboard_state_${user?.id || "anon"}`;
   const [editing, setEditing] = useState(false);
   const [showAddWidget, setShowAddWidget] = useState(false);
@@ -131,6 +133,11 @@ export default function MyDashboard() {
     queryKey: ["tasks"],
     queryFn: () => listTasks({ orderBy: "-created_date", limit: 200 }),
   });
+
+  const scopedTasks = useMemo(() => {
+    if (!isOwnTasksOnly || !user?.id) return tasks;
+    return tasks.filter((task) => task.lead_user_id === user.id);
+  }, [tasks, isOwnTasksOnly, user?.id]);
 
   const { data: emails = [] } = useQuery({
     queryKey: ["dashboardEmails"],
@@ -148,8 +155,8 @@ export default function MyDashboard() {
   });
 
   const stageSummary = useMemo(() => {
-    return getKanbanStageCounts(tasks, workflowStages);
-  }, [tasks, workflowStages]);
+    return getKanbanStageCounts(scopedTasks, workflowStages);
+  }, [scopedTasks, workflowStages]);
 
   const userNameById = useMemo(() => {
     const map = new Map();
@@ -161,8 +168,8 @@ export default function MyDashboard() {
 
   const myTasks = useMemo(() => {
     if (!user?.id) return [];
-    return tasks.filter((task) => task.lead_user_id === user.id);
-  }, [tasks, user?.id]);
+    return scopedTasks.filter((task) => task.lead_user_id === user.id);
+  }, [scopedTasks, user?.id]);
 
   const upcomingDeadlines = useMemo(() => {
     const now = Date.now();
@@ -176,10 +183,10 @@ export default function MyDashboard() {
   }, [myTasks]);
 
   const recentTeamActivity = useMemo(() => {
-    return [...tasks]
+    return [...scopedTasks]
       .sort((a, b) => new Date(b.updated_date || b.created_date || 0) - new Date(a.updated_date || a.created_date || 0))
       .slice(0, 6);
-  }, [tasks]);
+  }, [scopedTasks]);
 
   const myProgress = useMemo(() => {
     const total = myTasks.length;

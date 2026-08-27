@@ -20,9 +20,11 @@ import KanbanFilters from '../components/kanban/KanbanFilters';
 import TaskListForBacklog from '../components/kanban/TaskListForBacklog';
 import { ROLES } from '../components/shared/rbac';
 import { buildTaskStatusPatch } from '@/lib/taskAggregation';
+import { useEffectiveRole } from '@/lib/EffectiveRoleContext';
 
 export default function KanbanBoard() {
   const navigate = useNavigate();
+  const { isOwnTasksOnly } = useEffectiveRole();
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState({
     assignee: '',
@@ -41,6 +43,17 @@ export default function KanbanBoard() {
     queryKey: ['tasks'],
     queryFn: () => listTasks(),
   });
+
+  const visibleTasks = React.useMemo(() => {
+    if (!isOwnTasksOnly || !user?.id) return tasks;
+    return tasks.filter((task) => task.lead_user_id === user.id);
+  }, [tasks, isOwnTasksOnly, user?.id]);
+
+  useEffect(() => {
+    if (isOwnTasksOnly) {
+      setFilters((prev) => (prev.myTasks ? prev : { ...prev, myTasks: true, assignee: '' }));
+    }
+  }, [isOwnTasksOnly]);
 
   const { data: workflowStages = [] } = useQuery({
     queryKey: ['workflowStages'],
@@ -161,7 +174,7 @@ export default function KanbanBoard() {
       ? draggableId.replace('backlog-task-', '') 
       : draggableId;
     
-    const task = tasks.find(t => t.id === taskId);
+    const task = visibleTasks.find(t => t.id === taskId) || tasks.find(t => t.id === taskId);
     if (!task || !canDragTask(task)) return;
 
     const targetStageId = destination.droppableId;
@@ -189,7 +202,7 @@ export default function KanbanBoard() {
   };
 
   const getFilteredTasks = () => {
-    return tasks.filter(task => {
+    return visibleTasks.filter(task => {
       // Search filter
       if (searchQuery && !task.pillar.toLowerCase().includes(searchQuery.toLowerCase())) {
         return false;
@@ -296,6 +309,7 @@ export default function KanbanBoard() {
                 filters={filters}
                 onFiltersChange={setFilters}
                 users={users}
+                ownTasksOnly={isOwnTasksOnly}
               />
             </div>
           )}

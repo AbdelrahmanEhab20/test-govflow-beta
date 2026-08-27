@@ -14,7 +14,8 @@ export default function TaskViewTabs({
   activeView,
   onViewChange,
   tasks = [],
-  currentUserId
+  currentUserId,
+  ownTasksOnly = false,
 }) {
   const myTasks = tasks.filter((t) => t.lead_user_id === currentUserId);
   const overdue = tasks.filter((t) =>
@@ -34,7 +35,9 @@ export default function TaskViewTabs({
   const blocked = tasks.filter((t) => t.status === 'on_hold' || t.status === 'delayed');
 
   const views = [
-  { id: 'all', label: 'All Tasks', icon: ListTodo, count: tasks.length },
+  ...(!ownTasksOnly
+    ? [{ id: 'all', label: 'All Tasks', icon: ListTodo, count: tasks.length }]
+    : []),
   { id: 'my', label: 'My Tasks', icon: User, count: myTasks.length },
   { id: 'overdue', label: 'Overdue', icon: AlertCircle, count: overdue.length, highlight: overdue.length > 0 },
   { id: 'due_week', label: 'Due This Week', icon: Clock, count: dueThisWeek.length },

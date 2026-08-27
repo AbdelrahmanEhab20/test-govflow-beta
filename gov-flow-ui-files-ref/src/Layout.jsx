@@ -45,6 +45,7 @@ import NotificationCenter from "@/components/shared/NotificationCenter";
 import AssignmentToastListener from "@/components/shared/AssignmentToastListener";
 import OnboardingWizard from "@/components/onboarding/OnboardingWizard";
 import { useAuth } from "@/lib/AuthContext";
+import { EffectiveRoleProvider } from "@/lib/EffectiveRoleContext";
 
 const STATUS_LABELS = {
   not_started: { en: "Not Started", ar: "لم يبدأ" },
@@ -213,6 +214,7 @@ export default function Layout({ children, currentPageName }) {
   };
 
   return (
+    <EffectiveRoleProvider effectiveRole={effectiveRole} actualRole={user?.role}>
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <AssignmentToastListener />
       <style>{`
@@ -482,5 +484,6 @@ export default function Layout({ children, currentPageName }) {
         <OnboardingWizard user={user} onComplete={() => setShowOnboarding(false)} />
       )}
     </div>
+    </EffectiveRoleProvider>
   );
 }

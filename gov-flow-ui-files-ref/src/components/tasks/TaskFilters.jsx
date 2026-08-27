@@ -32,7 +32,8 @@ export default function TaskFilters({
   filters, 
   onFilterChange, 
   users = [],
-  pillars = []
+  pillars = [],
+  hideLeadFilter = false,
 }) {
   const activeFilterCount = Object.entries(filters).filter(
     ([key, value]) => value && value !== 'all' && key !== 'search'
@@ -92,6 +93,7 @@ export default function TaskFilters({
             </SelectContent>
           </Select>
 
+          {!hideLeadFilter && (
           <Select 
             value={filters.lead || 'all'} 
             onValueChange={(value) => onFilterChange({ ...filters, lead: value })}
@@ -108,6 +110,7 @@ export default function TaskFilters({
               ))}
             </SelectContent>
           </Select>
+          )}
 
           {pillars.length > 0 && (
             <Select 

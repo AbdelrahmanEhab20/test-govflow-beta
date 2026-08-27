@@ -29,7 +29,7 @@ router.get(
   requireAuth,
   asyncHandler(async (req, res) => {
     const { orderBy, limit } = req.query;
-    const tasks = await listTasks({ orderBy, limit });
+    const tasks = await listTasks({ orderBy, limit, actor: req.user });
     res.json(tasks);
   }),
 );
@@ -39,7 +39,7 @@ router.get(
   '/tasks/:id',
   requireAuth,
   asyncHandler(async (req, res) => {
-    const task = await getTaskById(req.params.id);
+    const task = await getTaskById(req.params.id, req.user);
     res.json(task);
   }),
 );
@@ -69,7 +69,7 @@ router.delete(
   '/tasks/:id',
   requireAuth,
   asyncHandler(async (req, res) => {
-    const result = await deleteTask(req.params.id);
+    const result = await deleteTask(req.params.id, req.user);
     res.json(result);
   }),
 );

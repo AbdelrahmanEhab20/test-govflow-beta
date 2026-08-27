@@ -23,6 +23,30 @@ function nowIso() {
 const HIGHER_ROLES = new Set(['admin', 'department_admin', 'department_manager', 'editor']);
 const MEMBER_ROLES = new Set(['team_member', 'user']);
 
+function isRestrictedTaskViewer(actor) {
+  const role = String(actor?.role || '');
+  return MEMBER_ROLES.has(role);
+}
+
+function assertCanViewTask(actor, task) {
+  if (!actor?.id) {
+    throw createHttpError(401, 'Authentication required', 'AUTH_REQUIRED');
+  }
+  if (!isRestrictedTaskViewer(actor)) return;
+  if (task?.lead_user_id !== actor.id) {
+    throw createHttpError(403, 'You can only view your own tasks', 'FORBIDDEN_TASK_VIEW');
+  }
+}
+
+function assertCanDeleteTask(actor) {
+  if (!actor?.id) {
+    throw createHttpError(401, 'Authentication required', 'AUTH_REQUIRED');
+  }
+  const role = String(actor.role || '');
+  if (HIGHER_ROLES.has(role)) return;
+  throw createHttpError(403, 'Only managers/admins can delete tasks', 'FORBIDDEN_TASK_DELETE');
+}
+
 function resolveStepFromStatusOrStage({ status, stageName }) {
   const normalizedStatus = String(status || '').trim().toLowerCase();
   const normalizedStage = String(stageName || '').trim().toLowerCase();
@@ -98,8 +122,12 @@ async function enforceTaskWorkflowPermissions({ actor, existing, patch }) {
 
 // ─── Tasks ──────────────────────────────────────────────────────────────────────
 
-export async function listTasks({ orderBy = '-created_date', limit } = {}) {
-  let query = Task.find(withTenant()).lean();
+export async function listTasks({ orderBy = '-created_date', limit, actor = null } = {}) {
+  const filter = withTenant();
+  if (isRestrictedTaskViewer(actor)) {
+    filter.lead_user_id = actor.id;
+  }
+  let query = Task.find(filter).lean();
   query = applySort(query, orderBy);
   if (limit) {
     const n = Number(limit);
@@ -110,11 +138,12 @@ export async function listTasks({ orderBy = '-created_date', limit } = {}) {
   return query.exec();
 }
 
-export async function getTaskById(id) {
+export async function getTaskById(id, actor = null) {
   const task = await Task.findOne(withTenant({ id })).lean();
   if (!task) {
     throw createHttpError(404, 'Task not found', 'TASK_NOT_FOUND');
   }
+  assertCanViewTask(actor, task);
   return task;
 }
 
@@ -167,7 +196,8 @@ export async function updateTask(id, patch, actor = null) {
   return updated;
 }
 
-export async function deleteTask(id) {
+export async function deleteTask(id, actor = null) {
+  assertCanDeleteTask(actor);
   await Task.findOneAndDelete(withTenant({ id }));
   return { success: true };
 }

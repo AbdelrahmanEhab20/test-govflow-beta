@@ -42,12 +42,20 @@ import ProgressBar from "../components/shared/ProgressBar";
 import OverdueTasksList from "../components/dashboard/OverdueTasksList";
 import DueThisWeekList from "../components/dashboard/DueThisWeekList";
 import RecentEmailsWidget from "../components/dashboard/RecentEmailsWidget";
+import { getCurrentUser } from "@/api/authApi";
+import { useEffectiveRole } from "@/lib/EffectiveRoleContext";
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
 export default function Reports() {
+  const { isOwnTasksOnly } = useEffectiveRole();
   const [dateRange, setDateRange] = useState('month');
   const [selectedLead, setSelectedLead] = useState('all');
+
+  const { data: currentUser } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: () => getCurrentUser(),
+  });
 
   const { data: tasks = [] } = useQuery({
     queryKey: ['tasks'],
@@ -64,9 +72,14 @@ export default function Reports() {
     queryFn: () => listEmails({}, '-received_at'),
   });
 
+  const scopedTasks = useMemo(() => {
+    if (!isOwnTasksOnly || !currentUser?.id) return tasks;
+    return tasks.filter((task) => task.lead_user_id === currentUser.id);
+  }, [tasks, isOwnTasksOnly, currentUser?.id]);
+
   // Filter tasks by date range
   const filteredTasks = useMemo(() => {
-    let result = tasks;
+    let result = scopedTasks;
     
     if (dateRange !== 'all') {
       const now = new Date();
@@ -86,12 +99,12 @@ export default function Reports() {
       });
     }
 
-    if (selectedLead !== 'all') {
+    if (!isOwnTasksOnly && selectedLead !== 'all') {
       result = result.filter(t => t.lead_user_id === selectedLead);
     }
 
     return result;
-  }, [tasks, dateRange, selectedLead]);
+  }, [scopedTasks, dateRange, selectedLead, isOwnTasksOnly]);
 
   // Calculate metrics
   const metrics = useMemo(() => {
@@ -208,6 +221,7 @@ export default function Reports() {
             </SelectContent>
           </Select>
 
+          {!isOwnTasksOnly && (
           <Select value={selectedLead} onValueChange={setSelectedLead}>
             <SelectTrigger className="w-40">
               <SelectValue placeholder="All Leads" />
@@ -221,6 +235,7 @@ export default function Reports() {
               ))}
             </SelectContent>
           </Select>
+          )}
 
           <Button onClick={handleExport}>
             <Download className="w-4 h-4 mr-2" />
