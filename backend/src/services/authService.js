@@ -5,6 +5,7 @@ import sendgridMail from '@sendgrid/mail';
 import { config } from '../config/index.js';
 import { createHttpError } from '../middleware/errorHandler.js';
 import { logger } from '../lib/logger.js';
+import { getResolvedBranding } from './brandingService.js';
 
 const BCRYPT_ROUNDS = 12;
 
@@ -70,6 +71,7 @@ export function tokenExpiry(minutes) {
 export async function sendInviteEmail(email, token) {
   const sendgrid = getSendgridClient();
   const inviteUrl = `${getPublicAppBaseUrl()}/accept-invite/${encodeURIComponent(token)}`;
+  const branding = await getResolvedBranding();
   if (!sendgrid) {
     logger.info('Invite URL generated (email skipped in local mode)', { email, inviteUrl });
     return { messageQueued: false, providerId: null };
@@ -85,8 +87,8 @@ export async function sendInviteEmail(email, token) {
       templateId: config.sendgrid.inviteTemplateId,
       dynamicTemplateData: {
         invite_url: inviteUrl,
-        app_name: config.branding.appName,
-        support_email: config.branding.supportEmail,
+        app_name: branding.appName,
+        support_email: branding.supportEmail,
       },
     });
   } catch (error) {
@@ -111,6 +113,7 @@ export async function sendInviteEmail(email, token) {
 export async function sendPasswordResetEmail(email, token) {
   const sendgrid = getSendgridClient();
   const resetUrl = `${getPublicAppBaseUrl()}/reset-password/${encodeURIComponent(token)}`;
+  const branding = await getResolvedBranding();
   if (!sendgrid) {
     logger.info('Reset URL generated (email skipped in local mode)', { email, resetUrl });
     return { messageQueued: false, providerId: null };
@@ -126,8 +129,8 @@ export async function sendPasswordResetEmail(email, token) {
       templateId: config.sendgrid.resetTemplateId,
       dynamicTemplateData: {
         reset_url: resetUrl,
-        app_name: config.branding.appName,
-        support_email: config.branding.supportEmail,
+        app_name: branding.appName,
+        support_email: branding.supportEmail,
       },
     });
   } catch (error) {

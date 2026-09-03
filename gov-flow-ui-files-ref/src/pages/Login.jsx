@@ -27,6 +27,22 @@ export default function Login() {
   const companyName = appPublicSettings?.public_settings?.companyName || 'GovFlow';
   const showGovflowCredit = appPublicSettings?.public_settings?.showGovflowCredit !== false;
   const govflowCreditText = appPublicSettings?.public_settings?.govflowCreditText || 'Powered by GovFlow';
+  const envLabel = appPublicSettings?.public_settings?.envLabel || 'beta';
+  const logoUrl = appPublicSettings?.public_settings?.logoUrl || '';
+  const resolvedLogoUrl = (() => {
+    if (!logoUrl) return govflowLoginLogo;
+    if (/^https?:\/\//i.test(logoUrl)) return logoUrl;
+    if (logoUrl.startsWith('/')) {
+      const apiBase = import.meta.env.VITE_API_BASE_URL;
+      if (!apiBase) return logoUrl === '/logo.svg' ? govflowLoginLogo : logoUrl;
+      try {
+        return new URL(logoUrl, apiBase).toString();
+      } catch {
+        return govflowLoginLogo;
+      }
+    }
+    return logoUrl;
+  })();
 
   const inputWrapperClass =
     'h-12 rounded-xl bg-white/80 border border-slate-200/80 flex items-center px-3 gap-2 transition-all focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20 shadow-sm';
@@ -51,8 +67,8 @@ export default function Login() {
           <div className="flex justify-center mb-6">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-50 to-white shadow-lg ring-1 ring-slate-200/80 dark:from-slate-800 dark:to-slate-900 dark:ring-slate-700">
               <img
-                src={govflowLoginLogo}
-                alt="GovFlow logo"
+                src={resolvedLogoUrl}
+                alt={`${appName} logo`}
                 className="h-10 w-10 rounded-lg object-cover"
                 draggable={false}
               />
@@ -141,7 +157,10 @@ export default function Login() {
             </button>
 
             <div className="space-y-1 pt-2 text-center">
-              <p className="text-xs text-slate-500 dark:text-slate-400">{companyName} beta</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                {companyName}
+                {envLabel ? ` ${envLabel}` : ''}
+              </p>
               {showGovflowCredit ? (
                 <p className="text-[11px] text-slate-400 dark:text-slate-500">{govflowCreditText}</p>
               ) : null}

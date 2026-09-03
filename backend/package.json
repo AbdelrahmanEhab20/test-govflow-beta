@@ -10,6 +10,7 @@
     "seed": "node scripts/seed.js",
     "normalize:departments": "node scripts/normalize-departments.js",
     "sync:task-stages": "node scripts/sync-task-stages.js",
+    "cleanup:demo": "node scripts/cleanup-demo-data.js",
     "lint": "eslint src --ext .js",
     "lint:fix": "eslint src --ext .js --fix"
   },

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { getCurrentUser, updateMe } from "@/api/authApi";
+import { getCurrentUser, updateMe, updateBranding, uploadBrandLogo } from "@/api/authApi";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Save,
@@ -8,7 +8,9 @@ import {
   Shield,
   Globe,
   Loader2,
-  Check
+  Check,
+  Palette,
+  Upload
 } from
   "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -27,6 +29,39 @@ import ConfirmDeleteDialog from "@/components/shared/ConfirmDeleteDialog";
 import { useMailboxOAuthCallback } from "@/hooks/useMailboxOAuthCallback";
 import { Badge } from "@/components/ui/badge";
 import { Trash2, Plus } from "lucide-react";
+import { useAuth } from "@/lib/AuthContext";
+
+function resolveMediaUrl(url) {
+  if (!url) return "";
+  if (/^https?:\/\//i.test(url)) return url;
+  if (url.startsWith('/')) {
+    const apiBase = import.meta.env.VITE_API_BASE_URL;
+    if (!apiBase) return url;
+    try {
+      return new URL(url, apiBase).toString();
+    } catch {
+      return url;
+    }
+  }
+  return url;
+}
+
+const EMPTY_BRANDING = {
+  appName: '',
+  companyName: '',
+  sidebarTitle: '',
+  tagline: '',
+  logoUrl: '',
+  faviconUrl: '',
+  primaryColor: '#2563eb',
+  secondaryColor: '#0f172a',
+  accentColor: '#6366f1',
+  supportEmail: '',
+  websiteUrl: '',
+  envLabel: 'beta',
+  showGovflowCredit: true,
+  govflowCreditText: 'Powered by GovFlow',
+};
 
 export default function Settings() {
   const [activeTab, setActiveTab] = useState('notifications');
@@ -34,11 +69,15 @@ export default function Settings() {
   const queryClient = useQueryClient();
   const [addMailboxOpen, setAddMailboxOpen] = useState(false);
   const [mailboxToDelete, setMailboxToDelete] = useState(null);
+  const { appPublicSettings, applyPublicSettings } = useAuth();
+  const [brandingForm, setBrandingForm] = useState(EMPTY_BRANDING);
+  const [logoUploading, setLogoUploading] = useState(false);
 
   const { data: user, isLoading } = useQuery({
     queryKey: ['currentUser'],
     queryFn: () => getCurrentUser()
   });
+  const isAdmin = user?.role === 'admin';
   const {
     data: outlookStatus,
     isLoading: isLoadingOutlookStatus,
@@ -81,6 +120,83 @@ export default function Settings() {
       setNotificationSettings(user.notification_preferences);
     }
   }, [user]);
+
+  React.useEffect(() => {
+    const branding = appPublicSettings?.public_settings || {};
+    setBrandingForm({
+      ...EMPTY_BRANDING,
+      ...branding,
+      showGovflowCredit: branding.showGovflowCredit !== false,
+    });
+  }, [appPublicSettings]);
+
+  const brandingMutation = useMutation({
+    mutationFn: (data) => updateBranding(data),
+    onSuccess: (result) => {
+      applyPublicSettings(result);
+      toast({
+        title: 'Branding saved',
+        description: 'White-label settings are live for this demo.',
+      });
+    },
+    onError: (error) => {
+      toast({
+        variant: 'destructive',
+        title: 'Unable to save branding',
+        description: error?.message || 'Please try again.',
+      });
+    },
+  });
+
+  const handleBrandingField = (field, value) => {
+    setBrandingForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSaveBranding = () => {
+    brandingMutation.mutate({
+      appName: brandingForm.appName,
+      companyName: brandingForm.companyName,
+      sidebarTitle: brandingForm.sidebarTitle,
+      tagline: brandingForm.tagline,
+      logoUrl: brandingForm.logoUrl,
+      faviconUrl: brandingForm.faviconUrl,
+      primaryColor: brandingForm.primaryColor,
+      secondaryColor: brandingForm.secondaryColor,
+      accentColor: brandingForm.accentColor,
+      supportEmail: brandingForm.supportEmail,
+      websiteUrl: brandingForm.websiteUrl,
+      envLabel: brandingForm.envLabel,
+      showGovflowCredit: brandingForm.showGovflowCredit,
+      govflowCreditText: brandingForm.govflowCreditText,
+    });
+  };
+
+  const handleLogoUpload = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    setLogoUploading(true);
+    try {
+      const result = await uploadBrandLogo(file);
+      applyPublicSettings(result);
+      setBrandingForm((prev) => ({
+        ...prev,
+        logoUrl: result?.logoUrl || result?.public_settings?.logoUrl || prev.logoUrl,
+      }));
+      toast({
+        title: 'Logo updated',
+        description: 'Brand logo uploaded successfully.',
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Logo upload failed',
+        description: error?.message || 'Please try again.',
+      });
+    } finally {
+      setLogoUploading(false);
+    }
+  };
 
   useMailboxOAuthCallback({ refetchOutlookStatus, refetchGmailStatus });
 
@@ -418,36 +534,217 @@ export default function Settings() {
         <TabsContent value="general">
           <Card>
             <CardHeader>
-              <CardTitle>General Settings</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Palette className="w-5 h-5" />
+                Branding &amp; White-label
+              </CardTitle>
               <CardDescription>
-                System-wide preferences
+                {isAdmin
+                  ? 'Change how this demo looks for each client. Saves to the database — no redeploy needed.'
+                  : 'Organization branding is managed by an administrator.'}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <Label>Organization Name</Label>
+                  <Label>Organization / Company Name</Label>
                   <Input
-                    value="Graviton Ventures"
-                    disabled
-                    className="mt-1.5 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-100 disabled:opacity-100 disabled:text-slate-700 dark:disabled:text-slate-100" />
-
+                    value={brandingForm.companyName || ''}
+                    disabled={!isAdmin}
+                    onChange={(e) => handleBrandingField('companyName', e.target.value)}
+                    className="mt-1.5"
+                    placeholder="GovFlow"
+                  />
                 </div>
-
                 <div>
-                  <Label>Default Language</Label>
-                  <div className="flex items-center gap-2 mt-1.5">
-                    <Button variant="outline" className="flex-1">
-                      English
-                    </Button>
-                    <Button variant="outline" className="flex-1">
-                      العربية
-                    </Button>
-                  </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    Status labels and UI elements will use both languages
-                  </p>
+                  <Label>App Name</Label>
+                  <Input
+                    value={brandingForm.appName || ''}
+                    disabled={!isAdmin}
+                    onChange={(e) => handleBrandingField('appName', e.target.value)}
+                    className="mt-1.5"
+                    placeholder="GovFlow"
+                  />
                 </div>
+                <div>
+                  <Label>Sidebar Title</Label>
+                  <Input
+                    value={brandingForm.sidebarTitle || ''}
+                    disabled={!isAdmin}
+                    onChange={(e) => handleBrandingField('sidebarTitle', e.target.value)}
+                    className="mt-1.5"
+                    placeholder="GovFlow"
+                  />
+                </div>
+                <div>
+                  <Label>Tagline</Label>
+                  <Input
+                    value={brandingForm.tagline || ''}
+                    disabled={!isAdmin}
+                    onChange={(e) => handleBrandingField('tagline', e.target.value)}
+                    className="mt-1.5"
+                    placeholder="Workflow System"
+                  />
+                </div>
+                <div>
+                  <Label>Env Label (login footer)</Label>
+                  <Input
+                    value={brandingForm.envLabel || ''}
+                    disabled={!isAdmin}
+                    onChange={(e) => handleBrandingField('envLabel', e.target.value)}
+                    className="mt-1.5"
+                    placeholder="beta"
+                  />
+                </div>
+                <div>
+                  <Label>Support Email</Label>
+                  <Input
+                    value={brandingForm.supportEmail || ''}
+                    disabled={!isAdmin}
+                    onChange={(e) => handleBrandingField('supportEmail', e.target.value)}
+                    className="mt-1.5"
+                    placeholder="support@govflow.local"
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-3">
+                <div>
+                  <Label>Primary Color</Label>
+                  <div className="mt-1.5 flex items-center gap-2">
+                    <Input
+                      type="color"
+                      value={brandingForm.primaryColor || '#2563eb'}
+                      disabled={!isAdmin}
+                      onChange={(e) => handleBrandingField('primaryColor', e.target.value)}
+                      className="h-10 w-14 p-1"
+                    />
+                    <Input
+                      value={brandingForm.primaryColor || ''}
+                      disabled={!isAdmin}
+                      onChange={(e) => handleBrandingField('primaryColor', e.target.value)}
+                      className="flex-1 font-mono text-sm"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label>Secondary Color</Label>
+                  <div className="mt-1.5 flex items-center gap-2">
+                    <Input
+                      type="color"
+                      value={brandingForm.secondaryColor || '#0f172a'}
+                      disabled={!isAdmin}
+                      onChange={(e) => handleBrandingField('secondaryColor', e.target.value)}
+                      className="h-10 w-14 p-1"
+                    />
+                    <Input
+                      value={brandingForm.secondaryColor || ''}
+                      disabled={!isAdmin}
+                      onChange={(e) => handleBrandingField('secondaryColor', e.target.value)}
+                      className="flex-1 font-mono text-sm"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label>Accent Color</Label>
+                  <div className="mt-1.5 flex items-center gap-2">
+                    <Input
+                      type="color"
+                      value={brandingForm.accentColor || '#6366f1'}
+                      disabled={!isAdmin}
+                      onChange={(e) => handleBrandingField('accentColor', e.target.value)}
+                      className="h-10 w-14 p-1"
+                    />
+                    <Input
+                      value={brandingForm.accentColor || ''}
+                      disabled={!isAdmin}
+                      onChange={(e) => handleBrandingField('accentColor', e.target.value)}
+                      className="flex-1 font-mono text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <Label>Logo</Label>
+                <div className="flex flex-wrap items-center gap-4">
+                  {brandingForm.logoUrl ? (
+                    <img
+                      src={resolveMediaUrl(brandingForm.logoUrl)}
+                      alt="Brand logo"
+                      className="h-12 w-12 rounded-lg object-cover border border-slate-200 dark:border-slate-700"
+                    />
+                  ) : (
+                    <div className="h-12 w-12 rounded-lg border border-dashed border-slate-300 dark:border-slate-600" />
+                  )}
+                  <div className="flex-1 min-w-[200px] space-y-2">
+                    <Input
+                      value={brandingForm.logoUrl || ''}
+                      disabled={!isAdmin}
+                      onChange={(e) => handleBrandingField('logoUrl', e.target.value)}
+                      placeholder="/logo.svg or https://..."
+                    />
+                    {isAdmin ? (
+                      <label className="inline-flex items-center gap-2 h-9 px-3 rounded-md border border-slate-200 dark:border-slate-700 text-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleLogoUpload}
+                          disabled={logoUploading}
+                        />
+                        {logoUploading ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Upload className="w-4 h-4" />
+                        )}
+                        Upload logo
+                      </label>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>Show “Powered by GovFlow” credit</Label>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Shown on the login footer</p>
+                </div>
+                <Switch
+                  checked={brandingForm.showGovflowCredit !== false}
+                  disabled={!isAdmin}
+                  onCheckedChange={(checked) => handleBrandingField('showGovflowCredit', checked)}
+                />
+              </div>
+
+              {isAdmin ? (
+                <div className="pt-2">
+                  <Button onClick={handleSaveBranding} disabled={brandingMutation.isPending || !useNodeBackend}>
+                    {brandingMutation.isPending ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Save className="w-4 h-4 mr-2" />
+                    )}
+                    Save Branding
+                  </Button>
+                </div>
+              ) : null}
+
+              <Separator />
+
+              <div className="space-y-4">
+                <h4 className="font-medium text-slate-900 dark:text-slate-100">Language</h4>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" className="flex-1">
+                    English
+                  </Button>
+                  <Button variant="outline" className="flex-1">
+                    العربية
+                  </Button>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Status labels and UI elements will use both languages
+                </p>
               </div>
 
               <Separator />

@@ -89,6 +89,8 @@ export const config = {
     showGovflowCredit: process.env.BRAND_SHOW_GOVFLOW_CREDIT !== 'false',
     govflowCreditText: process.env.BRAND_GOVFLOW_CREDIT_TEXT || 'Powered by GovFlow',
     govflowCreditUrl: process.env.BRAND_GOVFLOW_CREDIT_URL || 'https://govflow.ai',
+    // Bootstrap only — Mongo TenantSettings.branding overrides after Settings save
+    envLabel: process.env.BRAND_ENV_LABEL || 'beta',
   },
   allowDevLogin: process.env.ALLOW_DEV_LOGIN === 'true' || process.env.NODE_ENV !== 'production',
   allowLegacyUserHeader: process.env.ALLOW_LEGACY_X_USER_ID === 'true' || process.env.NODE_ENV !== 'production',

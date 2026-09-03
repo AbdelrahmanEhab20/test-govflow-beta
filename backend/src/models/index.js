@@ -13,4 +13,5 @@ export { NotificationPreference } from './NotificationPreference.js';
 export { RolePageAccess } from './RolePageAccess.js';
 export { RolePermission } from './RolePermission.js';
 export { TeamMember } from './TeamMember.js';
+export { TenantSettings } from './TenantSettings.js';
 

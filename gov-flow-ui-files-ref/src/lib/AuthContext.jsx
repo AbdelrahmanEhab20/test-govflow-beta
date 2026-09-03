@@ -3,6 +3,35 @@ import { getAppPublicSettings, getCurrentUser, logout as authLogout, redirectToL
 
 const AuthContext = createContext(undefined);
 
+function applyBrandingToDocument(publicSettings) {
+  const branding = publicSettings?.public_settings || publicSettings || {};
+  const appName = branding.appName;
+  if (typeof document === 'undefined') return;
+
+  if (appName) {
+    document.title = appName;
+  }
+  if (branding.primaryColor) {
+    document.documentElement.style.setProperty('--brand-primary-color', branding.primaryColor);
+  }
+  if (branding.secondaryColor) {
+    document.documentElement.style.setProperty('--brand-secondary-color', branding.secondaryColor);
+  }
+  if (branding.accentColor) {
+    document.documentElement.style.setProperty('--brand-accent-color', branding.accentColor);
+  }
+  const faviconUrl = branding.faviconUrl;
+  if (faviconUrl) {
+    let favicon = document.querySelector("link[rel='icon']");
+    if (!favicon) {
+      favicon = document.createElement('link');
+      favicon.setAttribute('rel', 'icon');
+      document.head.appendChild(favicon);
+    }
+    favicon.setAttribute('href', faviconUrl);
+  }
+}
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -16,6 +45,18 @@ export const AuthProvider = ({ children }) => {
     checkAppState();
   }, []);
 
+  const applyPublicSettings = (publicSettings) => {
+    if (!publicSettings) return;
+    setAppPublicSettings(publicSettings);
+    applyBrandingToDocument(publicSettings);
+  };
+
+  const refreshPublicSettings = async () => {
+    const publicSettings = await getAppPublicSettings();
+    applyPublicSettings(publicSettings);
+    return publicSettings;
+  };
+
   const checkAppState = async () => {
     try {
       setIsLoadingPublicSettings(true);
@@ -23,40 +64,14 @@ export const AuthProvider = ({ children }) => {
 
       try {
         const publicSettings = await getAppPublicSettings();
-        setAppPublicSettings(publicSettings);
-        const branding = publicSettings?.public_settings || {};
-        const appName = branding.appName;
-        if (appName && typeof document !== 'undefined') {
-          document.title = appName;
-        }
-        if (typeof document !== 'undefined') {
-          if (branding.primaryColor) {
-            document.documentElement.style.setProperty('--brand-primary-color', branding.primaryColor);
-          }
-          if (branding.secondaryColor) {
-            document.documentElement.style.setProperty('--brand-secondary-color', branding.secondaryColor);
-          }
-          if (branding.accentColor) {
-            document.documentElement.style.setProperty('--brand-accent-color', branding.accentColor);
-          }
-          const faviconUrl = branding.faviconUrl;
-          if (faviconUrl) {
-            let favicon = document.querySelector("link[rel='icon']");
-            if (!favicon) {
-              favicon = document.createElement('link');
-              favicon.setAttribute('rel', 'icon');
-              document.head.appendChild(favicon);
-            }
-            favicon.setAttribute('href', faviconUrl);
-          }
-        }
-        
+        applyPublicSettings(publicSettings);
+
         // For local/mock mode we always load the current user immediately.
         await checkUserAuth();
         setIsLoadingPublicSettings(false);
       } catch (appError) {
         console.error('App state check failed:', appError);
-        
+
         // Handle app-level errors
         if (appError.status === 403 && appError.data?.extra_data?.reason) {
           const reason = appError.data.extra_data.reason;
@@ -110,7 +125,7 @@ export const AuthProvider = ({ children }) => {
       console.error('User auth check failed:', error);
       setIsLoadingAuth(false);
       setIsAuthenticated(false);
-      
+
       // If user auth fails, it might be an expired token
       if (error.status === 401 || error.status === 403) {
         setAuthError({
@@ -124,7 +139,7 @@ export const AuthProvider = ({ children }) => {
   const logout = (shouldRedirect = true) => {
     setUser(null);
     setIsAuthenticated(false);
-    
+
     authLogout({ redirectToCurrent: shouldRedirect });
   };
 
@@ -163,13 +178,15 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      isAuthenticated, 
+    <AuthContext.Provider value={{
+      user,
+      isAuthenticated,
       isLoadingAuth,
       isLoadingPublicSettings,
       authError,
       appPublicSettings,
+      applyPublicSettings,
+      refreshPublicSettings,
       signIn,
       logout,
       navigateToLogin,

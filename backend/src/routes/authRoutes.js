@@ -8,6 +8,11 @@ import { isRemoteStorageEnabled, uploadAvatar } from '../services/storageService
 import { User } from '../models/index.js';
 import { inviteUser } from '../services/usersService.js';
 import {
+  getResolvedBranding,
+  toPublicSettingsPayload,
+  updateTenantBranding,
+} from '../services/brandingService.js';
+import {
   normalizeEmail,
   ensureStrongPassword,
   hashPassword,
@@ -38,28 +43,66 @@ function nowIso() {
 // GET /auth/public-settings
 router.get(
   '/public-settings',
-  (req, res) => {
+  asyncHandler(async (_req, res) => {
+    const branding = await getResolvedBranding();
     res.json({
       id: config.defaultTenantId,
-      public_settings: {
-        auth_required: true,
-        appName: config.branding.appName,
-        logoUrl: config.branding.logoUrl,
-        faviconUrl: config.branding.faviconUrl,
-        primaryColor: config.branding.primaryColor,
-        secondaryColor: config.branding.secondaryColor,
-        accentColor: config.branding.accentColor,
-        companyName: config.branding.companyName,
-        sidebarTitle: config.branding.sidebarTitle,
-        tagline: config.branding.tagline,
-        supportEmail: config.branding.supportEmail,
-        websiteUrl: config.branding.websiteUrl,
-        showGovflowCredit: config.branding.showGovflowCredit,
-        govflowCreditText: config.branding.govflowCreditText,
-        govflowCreditUrl: config.branding.govflowCreditUrl,
-      },
+      public_settings: toPublicSettingsPayload(branding),
     });
-  }
+  })
+);
+
+// PATCH /auth/branding — admin-only white-label overrides (persisted in Mongo)
+router.patch(
+  '/branding',
+  requireAuth,
+  requireRole('admin'),
+  asyncHandler(async (req, res) => {
+    const branding = await updateTenantBranding({
+      patch: req.body || {},
+      updatedBy: req.user?.id,
+    });
+    res.json({
+      id: config.defaultTenantId,
+      public_settings: toPublicSettingsPayload(branding),
+    });
+  })
+);
+
+// POST /auth/branding/logo — admin upload for brand logo
+router.post(
+  '/branding/logo',
+  requireAuth,
+  requireRole('admin'),
+  uploadAvatarMiddleware,
+  asyncHandler(async (req, res) => {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'NO_FILE', message: 'No logo file uploaded' },
+      });
+    }
+
+    let publicUrl;
+    if (isRemoteStorageEnabled()) {
+      publicUrl = await uploadAvatar(req.file);
+    } else {
+      const fileName = path.basename(req.file.path);
+      const publicPath = `/uploads/${fileName}`;
+      publicUrl = `${req.protocol}://${req.get('host')}${publicPath}`;
+    }
+
+    const branding = await updateTenantBranding({
+      patch: { logoUrl: publicUrl },
+      updatedBy: req.user?.id,
+    });
+
+    res.json({
+      logoUrl: publicUrl,
+      id: config.defaultTenantId,
+      public_settings: toPublicSettingsPayload(branding),
+    });
+  })
 );
 
 // GET /auth/me

@@ -30,6 +30,22 @@ export async function getAppPublicSettings() {
   };
 }
 
+export async function updateBranding(data) {
+  if (!useNodeBackend) {
+    throw new Error('Branding updates require node backend mode');
+  }
+  return nodeRequest('/auth/branding', { method: 'PATCH', body: data });
+}
+
+export async function uploadBrandLogo(file) {
+  if (!useNodeBackend) {
+    throw new Error('Brand logo upload requires node backend mode');
+  }
+  const formData = new FormData();
+  formData.append('avatar', file);
+  return nodeRequest('/auth/branding/logo', { method: 'POST', formData });
+}
+
 export async function getCurrentUser() {
   if (useNodeBackend) {
     if (isNodeBackendSignedOut()) {
