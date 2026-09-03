@@ -7,17 +7,24 @@ Use this before sharing `test-govflow-beta.vercel.app` (or any demo URL) with ex
 From `backend/` against the **beta** MongoDB (`MONGO_URI`):
 
 ```bash
-# Preview what will be deleted (safe)
-npm run cleanup:demo
+# Preview what will be deleted (safe) — keep ONLY these two accounts
+npm run cleanup:demo -- \
+  --keep-email=info@gravitonventures.com \
+  --keep-email=abdelrahmanehab3232@gmail.com
 
-# Apply: wipe tasks/emails/activity; keep role=admin users + departments/stages/RBAC
-npm run cleanup:demo -- --apply
+# Apply: wipe tasks/emails/activity + all other users
+npm run cleanup:demo -- \
+  --keep-email=info@gravitonventures.com \
+  --keep-email=abdelrahmanehab3232@gmail.com \
+  --apply
 
 # Optional flags
 # --keep-team-members     keep Team directory rows
 # --clear-routing-rules   also delete email routing rules
-# --reset-mailboxes       clear OAuth mailboxes on admin accounts
+# --reset-mailboxes       clear OAuth mailboxes on kept accounts
 ```
+
+Without `--keep-email`, the script keeps every `role=admin` user (including e.g. `admin@gravitonventures.com`). Prefer explicit `--keep-email` for client demos.
 
 Do **not** run `npm run seed` for cleanup — seed wipes admins and reseeds demo clutter.
 
